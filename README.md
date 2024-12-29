@@ -1,7 +1,4 @@
 # 👮🏻‍♀🤖 Data Loss Prevention (DLP) Insight
-```
-⬆️ 
-```
 
 Machine Learning for Data Loss Prevention (DLP) Insight
 
