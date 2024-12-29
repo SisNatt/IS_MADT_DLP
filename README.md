@@ -1,13 +1,13 @@
-# 📦 Streamlit App Starter Kit 
+# 👮🏻‍♀🤖 Data Loss Prevention (DLP) Insight
 ```
-⬆️ (Replace above with your app's name)
+⬆️ 
 ```
 
-Description of the app ...
+Machine Learning for Data Loss Prevention (DLP) Insight
 
 ## Demo App
 
-[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://app-starter-kit.streamlit.app/)
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://MADT_DLP.streamlit.app/)
 
 ## GitHub Codespaces
 
