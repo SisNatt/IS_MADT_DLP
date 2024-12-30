@@ -222,7 +222,7 @@ elif selected == "User Behavior Analysis":
                                      'Most Frequent Destination', 'Total Incidents']
             st.dataframe(user_behavior)
 
-           # Filter data for the top 5 users with the most incidents
+          # Filter data for the last month
             st.subheader("Timeline of Top 5 Users' Incidents (Last Month)")
 
             # Ensure 'Occurred (UTC)' is in datetime format
@@ -231,6 +231,10 @@ elif selected == "User Behavior Analysis":
             # Get last month's date range
             last_month = datetime.now() - pd.DateOffset(months=1)
             filtered_data = df_processed[df_processed['Occurred (UTC)'] >= last_month]
+
+            # Count total incidents per user
+            incident_user_count = filtered_data['Event User'].value_counts().reset_index()
+            incident_user_count.columns = ['Event User', 'Total Incidents']
 
             # Identify top 5 users with the most incidents
             top_users = incident_user_count.head(5)['Event User'].tolist()
