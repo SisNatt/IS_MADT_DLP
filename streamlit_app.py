@@ -245,7 +245,8 @@ if selected == "User Behavior Analysis":
                 x='Event User',
                 y='Total Incidents',
                 color='Average Severity',
-                title="Top 10 User Behavior: Total Incidents and Average Severity"
+                title="Top 10 User Behavior: Total Incidents and Average Severity",
+                labels={"Total Incidents": "Number of Incidents", "Average Severity": "Severity"}
             )
             st.plotly_chart(user_incident_fig)
 
@@ -276,52 +277,45 @@ if selected == "User Behavior Analysis":
                 y='Average Severity',
                 size='Anomaly Score',
                 color='Anomaly Score',
-                title="Top 10 Anomalous User Behavior"
+                title="Top 10 Anomalous User Behavior",
+                labels={"Total Incidents": "Number of Incidents", "Average Severity": "Severity"}
             )
             st.plotly_chart(anomaly_fig)
 
-            # Step: Behavior Clustering
-st.subheader("Step 4: Behavior Clustering")
+            # Step 5: Behavior Clustering
+            st.subheader("Step 3: Behavior Clustering")
+            from sklearn.cluster import KMeans
 
-from sklearn.cluster import KMeans
-from sklearn.preprocessing import StandardScaler
+            # Apply K-Means Clustering
+            kmeans = KMeans(n_clusters=5, random_state=42)
+            user_behavior['Cluster'] = kmeans.fit_predict(scaled_data)
 
-# เตรียมข้อมูลสำหรับ Clustering
-clustering_features = ['Total Incidents', 'Average Severity']  # คุณสามารถเพิ่มฟีเจอร์อื่นได้
-clustering_data = user_behavior[clustering_features]
+            # Visualize Clusters
+            cluster_fig = px.scatter(
+                user_behavior,
+                x='Total Incidents',
+                y='Average Severity',
+                color='Cluster',
+                title="User Behavior Clustering: 5 Groups",
+                labels={"Cluster": "Cluster Group"}
+            )
+            st.plotly_chart(cluster_fig)
 
-# Scale ข้อมูล
-scaler = StandardScaler()
-scaled_clustering_data = scaler.fit_transform(clustering_data)
+            # อธิบายกลุ่มพฤติกรรม
+            st.markdown("### Cluster Characteristics")
+            clusters_description = {
+                0: "Clipboard & Cloud Users: Copying data to the clipboard and using cloud applications.",
+                1: "High-Risk Storage & Print: High usage of removable storage or printing data, indicating risk of data being taken outside the organization.",
+                2: "Mixed Activity Users: Engaging in a variety of incident types, such as removable storage, screen capturing, and web access.",
+                3: "File Access & Cloud Users: Accessing files through applications with lower risk but still requiring monitoring.",
+                4: "Screen Capture & Web Users: Focusing on screen capturing and web usage, which may indicate data monitoring concerns."
+            }
 
-# Apply K-Means Clustering
-kmeans = KMeans(n_clusters=5, random_state=42)  # แบ่งออกเป็น 5 กลุ่ม
-user_behavior['Cluster'] = kmeans.fit_predict(scaled_clustering_data)
+            for cluster, description in clusters_description.items():
+                st.markdown(f"**Cluster {cluster}:** {description}")
 
-# Visualize Clusters
-cluster_fig = px.scatter(
-    user_behavior,
-    x='Total Incidents',
-    y='Average Severity',
-    color='Cluster',
-    title="User Behavior Clustering: 5 Groups",
-    labels={"Cluster": "Cluster Group"}
-)
-st.plotly_chart(cluster_fig)
-
-# อธิบาย Character ของแต่ละกลุ่ม
-st.markdown("### Cluster Characteristics")
-clusters_description = {
-    0: "Clipboard & Cloud Users: Copying data to the clipboard and using cloud applications.",
-    1: "High-Risk Storage & Print: High usage of removable storage or printing data, indicating risk of data being taken outside the organization.",
-    2: "Mixed Activity Users: Engaging in a variety of incident types, such as removable storage, screen capturing, and web access.",
-    3: "File Access & Cloud Users: Accessing files through applications with lower risk but still requiring monitoring.",
-    4: "Screen Capture & Web Users: Focusing on screen capturing and web usage, which may indicate data monitoring concerns."
-}
-
-for cluster, description in clusters_description.items():
-    st.markdown(f"**Cluster {cluster}:** {description}")
-
+        except Exception as e:
+            st.error(f"Error analyzing user behavior: {e}")
     else:
         st.warning("No processed file found. Please identify incidents first.")
 
