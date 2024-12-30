@@ -27,47 +27,54 @@ if selected == "Home - Raw Data":
     st.subheader("Raw Data Overview")
 
     try:
+        # Load raw data
         df_raw = pd.read_csv(INCIDENT_FILE, encoding='utf-8-sig')
         st.write(f"Total records: {len(df_raw)}")
+
+        # Display raw data in expander
         with st.expander("View Raw Data"):
             st.dataframe(df_raw)
+
+        # Add a button to process incidents
+        if st.button("Process Incidents"):
+            try:
+                # Load dictionary
+                df_dictionary = pd.read_csv(DICTIONARY_FILE, encoding='utf-8-sig')
+
+                # Define matching words
+                matching_words = set(df_dictionary['Word'].str.lower().str.strip())
+
+                def check_evidence_match(row):
+                    """Check if words in 'Evident_data' match the dictionary."""
+                    evident_data = str(row['Evident_data']).lower().strip()
+                    for word in matching_words:
+                        if word in evident_data:
+                            return 'True'
+                    return 'False'
+
+                # Validate 'Evident_data' column
+                if 'Evident_data' not in df_raw.columns:
+                    st.error("Column 'Evident_data' not found in the dataset.")
+                    st.stop()
+
+                # Apply the matching function
+                df_raw['Match_Label'] = df_raw.apply(check_evidence_match, axis=1)
+
+                # Save processed file
+                today = datetime.now().strftime("%d%m%y")
+                existing_files = [f for f in os.listdir(OUTPUT_DIR) if f.startswith(f"incident_log_with_match_{today}")]
+                running_number = len(existing_files) + 1
+                output_file = f"{OUTPUT_DIR}/incident_log_with_match_{today}_{running_number:03d}.csv"
+                df_raw.to_csv(output_file, index=False, encoding='utf-8-sig')
+
+                # Save processed file to session state
+                st.session_state['processed_file'] = output_file
+                st.success(f"Processed file saved as '{output_file}'")
+            except Exception as e:
+                st.error(f"Error processing incidents: {e}")
+
     except Exception as e:
         st.error(f"Error loading raw data: {e}")
-
-# Page 2: Identify Incidents
-elif selected == "Identify Incidents":
-    st.title("🔍 Identify Incidents")
-
-    if st.button("Process Incidents"):
-        try:
-            df_raw = pd.read_csv(INCIDENT_FILE, encoding='utf-8-sig')
-            df_dictionary = pd.read_csv(DICTIONARY_FILE, encoding='utf-8-sig')
-
-            matching_words = set(df_dictionary['Word'].str.lower().str.strip())
-
-            def check_evidence_match(row):
-                evident_data = str(row['Evident_data']).lower().strip()
-                for word in matching_words:
-                    if word in evident_data:
-                        return 'True'
-                return 'False'
-
-            if 'Evident_data' not in df_raw.columns:
-                st.error("Column 'Evident_data' not found in the dataset.")
-                st.stop()
-
-            df_raw['Match_Label'] = df_raw.apply(check_evidence_match, axis=1)
-
-            today = datetime.now().strftime("%d%m%y")
-            existing_files = [f for f in os.listdir(OUTPUT_DIR) if f.startswith(f"incident_log_with_match_{today}")]
-            running_number = len(existing_files) + 1
-            output_file = f"{OUTPUT_DIR}/incident_log_with_match_{today}_{running_number:03d}.csv"
-
-            df_raw.to_csv(output_file, index=False, encoding='utf-8-sig')
-            st.success(f"Processed file saved as '{output_file}'")
-            st.session_state['processed_file'] = output_file
-        except Exception as e:
-            st.error(f"Error processing incidents: {e}")
 
 # Page 3: View Processed Data
 elif selected == "View Processed Data":
