@@ -298,7 +298,7 @@ elif selected == "User Behavior Analysis":
             labels={'Occurred (UTC)': 'Date', 'Incident Count': 'Number of Incidents'},
             markers=True
         )
-        st.plotly_chart(fig)
+    st.plotly_chart(fig)
     except Exception as e:
             st.error(f"Error analyzing user behavior: {e}")
 else:
