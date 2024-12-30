@@ -222,35 +222,36 @@ elif selected == "User Behavior Analysis":
                                      'Most Frequent Destination', 'Total Incidents']
             st.dataframe(user_behavior)
 
-           # Filter for Severity = Critical in the last month
-            st.subheader("Top 5 Users with Critical Severity (Last Month)")
+           # Filter data for the top 5 users with the most incidents
+            st.subheader("Timeline of Top 5 Users' Incidents (Last Month)")
 
             # Ensure 'Occurred (UTC)' is in datetime format
             df_processed['Occurred (UTC)'] = pd.to_datetime(df_processed['Occurred (UTC)'])
 
             # Get last month's date range
             last_month = datetime.now() - pd.DateOffset(months=1)
-            critical_last_month = df_processed[
-            (df_processed['Severity'] == 'Critical') & (df_processed['Occurred (UTC)'] >= last_month)
-            ]
+            filtered_data = df_processed[df_processed['Occurred (UTC)'] >= last_month]
 
-            # Count incidents per user
-            critical_user_count = critical_last_month['Event User'].value_counts().reset_index()
-            critical_user_count.columns = ['Event User', 'Critical Incidents']
+            # Identify top 5 users with the most incidents
+            top_users = incident_user_count.head(5)['Event User'].tolist()
 
-            # Display top 5 users
-            top_critical_users = critical_user_count.head(5)
-            st.write("Top 5 Users with the Most Critical Incidents (Last Month):")
-            st.dataframe(top_critical_users)
+            # Filter data for the top 5 users
+            filtered_data_top_users = filtered_data[filtered_data['Event User'].isin(top_users)]
 
-            # Bar chart
-            fig = px.bar(
-            top_critical_users,
-            x='Event User',
-            y='Critical Incidents',
-            color='Critical Incidents',
-            title="Top 5 Users with Critical Severity Incidents (Last Month)",
-            labels={'Critical Incidents': 'Number of Critical Incidents'}
+            # Group data by date and user
+            timeline_data = filtered_data_top_users.groupby(
+            [filtered_data_top_users['Occurred (UTC)'].dt.date, 'Event User']
+            ).size().reset_index(name='Incident Count')
+
+            # Plot timeline
+            fig = px.line(
+            timeline_data,
+            x='Occurred (UTC)',
+            y='Incident Count',
+            color='Event User',
+            title="Timeline of Incidents for Top 5 Users (Last Month)",
+            labels={'Occurred (UTC)': 'Date', 'Incident Count': 'Number of Incidents'},
+            markers=True
             )
             st.plotly_chart(fig)
 
