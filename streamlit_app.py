@@ -3,7 +3,6 @@ import pandas as pd
 import os
 from datetime import datetime
 import plotly.express as px
-from mlxtend.frequent_patterns import apriori, association_rules
 import plotly.express as px
 
 # File paths
