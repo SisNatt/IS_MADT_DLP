@@ -188,7 +188,8 @@ elif selected == "Pattern Mining":
                     frequent_itemsets, 
                     metric="confidence",
                     min_threshold=min_confidence,
-                    support_only=False  # เพิ่มพารามิเตอร์นี้
+                    support_only=False,  # เพิ่มพารามิเตอร์นี้
+                    num_itemsets=1  # เพิ่มบรรทัดนี้
                 )
                 
                 if not rules.empty:
