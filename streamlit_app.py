@@ -250,38 +250,45 @@ if selected == "User Behavior Analysis":
             )
             st.plotly_chart(user_incident_fig)
 
-           # Step 4: Anomaly Detection for Event Users
-            st.subheader("Step 2: Detect Anomalous User Behavior")
-            from sklearn.ensemble import IsolationForest
-            from sklearn.preprocessing import StandardScaler
+          # Step 4: Anomaly Detection for Event Users
+        st.subheader("Step 2: Detect Anomalous User Behavior")
 
-            # Prepare data for Anomaly Detection
-            anomaly_data = user_behavior[['Total Incidents', 'Average Severity']]
-            scaler = StandardScaler()
-            scaled_data = scaler.fit_transform(anomaly_data)
+        from sklearn.ensemble import IsolationForest
+        from sklearn.preprocessing import StandardScaler
 
-            # Use Isolation Forest
-            isolation_forest = IsolationForest(random_state=42)
-            isolation_forest.fit(scaled_data)  # Fit the model here
-            user_behavior['Anomaly Score'] = isolation_forest.decision_function(scaled_data)
-            user_behavior['Anomaly'] = isolation_forest.predict(scaled_data)
+        # เตรียมข้อมูลสำหรับ Anomaly Detection
+        anomaly_data = user_behavior[['Total Incidents', 'Average Severity']]
+        scaler = StandardScaler()
+        scaled_data = scaler.fit_transform(anomaly_data)
 
-            # Select Top 10 Anomalous Users
-            anomalies = user_behavior[user_behavior['Anomaly'] == -1].nlargest(10, 'Anomaly Score')
-            st.write("Top 10 Anomalous Users:")
-            st.dataframe(anomalies)
+        # ใช้ Isolation Forest
+        isolation_forest = IsolationForest(random_state=42)
+        isolation_forest.fit(scaled_data)  # เรียกใช้ fit ก่อน
 
-            # Visualize Top 10 Anomalies
-            anomaly_fig = px.scatter(
-            anomalies,
-            x='Total Incidents',
-            y='Average Severity',
-            size='Anomaly Score',
-            color='Anomaly Score',
-            title="Top 10 Anomalous User Behavior",
-            labels={"Total Incidents": "Number of Incidents", "Average Severity": "Severity"}
-            )
-            st.plotly_chart(anomaly_fig)
+        # คำนวณ Anomaly Score และคาดการณ์ Anomaly
+        user_behavior['Anomaly Score'] = isolation_forest.decision_function(scaled_data)
+        user_behavior['Anomaly'] = isolation_forest.predict(scaled_data)
+
+        # แปลง Anomaly Score ให้เป็นค่าบวก
+        user_behavior['Anomaly Score (Positive)'] = user_behavior['Anomaly Score'].abs()
+
+        # เลือก Top 10 Anomalous Users
+        anomalies = user_behavior[user_behavior['Anomaly'] == -1].nlargest(10, 'Anomaly Score')
+        st.write("Top 10 Anomalous Users:")
+        st.dataframe(anomalies)
+
+        # Visualize Top 10 Anomalies
+        anomaly_fig = px.scatter(
+        anomalies,
+        x='Total Incidents',
+        y='Average Severity',
+        size='Anomaly Score (Positive)',  # ใช้ค่าบวกสำหรับ size
+        color='Anomaly Score',
+        title="Top 10 Anomalous User Behavior",
+        labels={"Total Incidents": "Number of Incidents", "Average Severity": "Severity"}
+        )
+        st.plotly_chart(anomaly_fig)
+
             # Step 5: Behavior Clustering
             st.subheader("Step 3: Behavior Clustering")
             from sklearn.cluster import KMeans
