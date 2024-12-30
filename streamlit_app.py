@@ -194,15 +194,30 @@ elif selected == "Pattern Mining":
     else:
         st.warning("No processed file found. Please identify incidents first.")
 
+# Page: User and Department Behavior Analysis
 if selected == "User Behavior Analysis":
     st.title("👤 User and Department Behavior Analysis")
 
     if 'processed_file' in st.session_state:
         try:
+            # Load processed data
             processed_file = st.session_state['processed_file']
             df_processed = pd.read_csv(processed_file, encoding='utf-8-sig')
 
-            # ตรวจสอบคอลัมน์สำหรับวันที่และเวลา
+            # Step 1: ตรวจสอบและแปลงคอลัมน์ Severity เป็นตัวเลข
+            if 'Severity' in df_processed.columns:
+                try:
+                    # แปลง Severity เป็นตัวเลข
+                    df_processed['Severity'] = pd.to_numeric(df_processed['Severity'], errors='coerce')
+                    # เติมค่าที่หายไปด้วยค่าเฉลี่ย
+                    df_processed['Severity'] = df_processed['Severity'].fillna(df_processed['Severity'].mean())
+                except Exception as e:
+                    st.error(f"Error converting Severity column: {e}")
+            else:
+                st.error("Column 'Severity' not found in the dataset.")
+                st.stop()
+
+            # Step 2: ตรวจสอบคอลัมน์วันที่และเวลา
             if 'Occurred (UTC)' in df_processed.columns:
                 date_column = 'Occurred (UTC)'
             elif 'Time' in df_processed.columns:
@@ -211,12 +226,12 @@ if selected == "User Behavior Analysis":
                 st.error("No valid date or time column found in the dataset.")
                 st.stop()
 
-            # Step 1: Aggregate Data by Event User
+            # Step 3: วิเคราะห์พฤติกรรมของ Event User
             st.subheader("Step 1: User Behavior Analysis")
             user_behavior = df_processed.groupby('Event User').agg({
                 'Incident Type': 'count',
                 'Severity': 'mean',
-                date_column: ['min', 'max']  # ใช้คอลัมน์วันที่ที่ตรวจพบ
+                date_column: ['min', 'max']
             }).reset_index()
 
             user_behavior.columns = ['Event User', 'Total Incidents', 'Average Severity', 'First Access', 'Last Access']
@@ -225,37 +240,65 @@ if selected == "User Behavior Analysis":
 
             # Visualize User Behavior
             user_incident_fig = px.bar(
-                user_behavior, 
-                x='Event User', 
-                y='Total Incidents', 
+                user_behavior,
+                x='Event User',
+                y='Total Incidents',
                 color='Average Severity',
                 title="User Behavior: Total Incidents and Average Severity"
             )
             st.plotly_chart(user_incident_fig)
 
-            # Step 2: Aggregate Data by Department
+            # Step 4: วิเคราะห์พฤติกรรมของ Department
             st.subheader("Step 2: Department Behavior Analysis")
-            department_behavior = df_processed.groupby('Department').agg({
-                'Incident Type': 'count',
-                'Severity': 'mean'
-            }).reset_index()
+            if 'Department' in df_processed.columns:
+                department_behavior = df_processed.groupby('Department').agg({
+                    'Incident Type': 'count',
+                    'Severity': 'mean'
+                }).reset_index()
 
-            department_behavior.columns = ['Department', 'Total Incidents', 'Average Severity']
-            st.write("Department Behavior Overview:")
-            st.dataframe(department_behavior)
+                department_behavior.columns = ['Department', 'Total Incidents', 'Average Severity']
+                st.write("Department Behavior Overview:")
+                st.dataframe(department_behavior)
 
-            # Visualize Department Behavior
-            department_fig = px.bar(
-                department_behavior, 
-                x='Department', 
-                y='Total Incidents', 
-                color='Average Severity',
-                title="Department Behavior: Total Incidents and Average Severity"
+                # Visualize Department Behavior
+                department_fig = px.bar(
+                    department_behavior,
+                    x='Department',
+                    y='Total Incidents',
+                    color='Average Severity',
+                    title="Department Behavior: Total Incidents and Average Severity"
+                )
+                st.plotly_chart(department_fig)
+            else:
+                st.warning("Column 'Department' not found in the dataset.")
+
+            # Step 5: ตรวจจับความผิดปกติของ User
+            st.subheader("Step 3: Detect Anomalous User Behavior")
+            from sklearn.ensemble import IsolationForest
+            from sklearn.preprocessing import StandardScaler
+
+            # เตรียมข้อมูลสำหรับ Anomaly Detection
+            anomaly_data = user_behavior[['Total Incidents', 'Average Severity']]
+            scaler = StandardScaler()
+            scaled_data = scaler.fit_transform(anomaly_data)
+
+            # ใช้ Isolation Forest เพื่อตรวจจับความผิดปกติ
+            isolation_forest = IsolationForest(random_state=42)
+            user_behavior['Anomaly'] = isolation_forest.fit_predict(scaled_data)
+
+            # Visualize Anomalies
+            anomaly_fig = px.scatter(
+                user_behavior,
+                x='Total Incidents',
+                y='Average Severity',
+                color='Anomaly',
+                title="Anomaly Detection in User Behavior"
             )
-            st.plotly_chart(department_fig)
+            st.plotly_chart(anomaly_fig)
 
         except Exception as e:
             st.error(f"Error analyzing user and department behavior: {e}")
     else:
         st.warning("No processed file found. Please identify incidents first.")
+
 
