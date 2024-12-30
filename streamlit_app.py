@@ -90,41 +90,49 @@ elif selected == "View Processed Data":
             with st.expander("View Processed Data"):
                 st.dataframe(df_processed)
 
-            # Severity Count
-            if 'Severity' in df_processed.columns:
-                st.subheader("Severity Count")
-                severity_count = df_processed['Severity'].value_counts().reset_index()
-                severity_count.columns = ['Severity', 'Count']
-                severity_fig = px.bar(severity_count, x='Severity', y='Count', color='Count', title="Severity Distribution")
-                st.plotly_chart(severity_fig)
-            else:
-                st.error("Column 'Severity' not found in the processed dataset.")
-
-            # Incident Type Count
-            if 'Incident Type' in df_processed.columns:
-                st.subheader("Incident Type Count")
-                incident_type_count = df_processed['Incident Type'].value_counts().reset_index()
-                incident_type_count.columns = ['Incident Type', 'Count']
-                incident_type_fig = px.bar(incident_type_count, x='Incident Type', y='Count',
-                                           color='Count', title="Incident Type Distribution")
-                st.plotly_chart(incident_type_fig)
-            else:
-                st.error("Column 'Incident Type' not found in the processed dataset.")
-
-            # Match Label Count
+            # Match_Label Filter
             if 'Match_Label' in df_processed.columns:
-                st.subheader("Match Label Count")
-                match_label_count = df_processed['Match_Label'].value_counts().reset_index()
-                match_label_count.columns = ['Match_Label', 'Count']
-                match_label_fig = px.bar(match_label_count, x='Match_Label', y='Count',
-                                         color='Count', title="Match Label Distribution")
-                st.plotly_chart(match_label_fig)
+                st.subheader("Filter by Match_Label")
+                match_label_filter = st.radio(
+                    "Select Match_Label to analyze:",
+                    options=['All', 'True', 'False'],
+                    index=0
+                )
+
+                if match_label_filter != 'All':
+                    df_filtered = df_processed[df_processed['Match_Label'] == match_label_filter]
+                else:
+                    df_filtered = df_processed
+
+                st.write(f"Filtered records: {len(df_filtered)}")
+                st.dataframe(df_filtered)
+
+                # Severity Count for Filtered Data
+                if 'Severity' in df_filtered.columns:
+                    st.subheader("Severity Count (Filtered by Match_Label)")
+                    severity_count = df_filtered['Severity'].value_counts().reset_index()
+                    severity_count.columns = ['Severity', 'Count']
+                    severity_fig = px.bar(severity_count, x='Severity', y='Count',
+                                          color='Count', title="Severity Distribution (Filtered)")
+                    st.plotly_chart(severity_fig)
+
+                # Incident Type Count for Filtered Data
+                if 'Incident Type' in df_filtered.columns:
+                    st.subheader("Incident Type Count (Filtered by Match_Label)")
+                    incident_type_count = df_filtered['Incident Type'].value_counts().reset_index()
+                    incident_type_count.columns = ['Incident Type', 'Count']
+                    incident_type_fig = px.bar(incident_type_count, x='Incident Type', y='Count',
+                                               color='Count', title="Incident Type Distribution (Filtered)")
+                    st.plotly_chart(incident_type_fig)
+                else:
+                    st.error("Column 'Incident Type' not found in the processed dataset.")
             else:
-                st.error("The column 'Match_Label' does not exist in the dataset.")
+                st.error("Column 'Match_Label' does not exist in the dataset.")
         except Exception as e:
             st.error(f"Error loading processed data: {e}")
     else:
         st.warning("No processed file found. Please identify incidents first.")
+
 
 # Page 4: Pattern Mining
 elif selected == "Pattern Mining":
