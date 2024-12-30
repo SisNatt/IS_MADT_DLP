@@ -250,81 +250,66 @@ if selected == "User Behavior Analysis":
             )
             st.plotly_chart(user_incident_fig)
 
-          # Step 4: Anomaly Detection for Event Users
-        st.subheader("Step 2: Detect Anomalous User Behavior")
+        # Page: User Behavior Analysis
+if selected == "User Behavior Analysis":
+    st.title("👤 User Behavior Analysis")
 
-        from sklearn.ensemble import IsolationForest
-        from sklearn.preprocessing import StandardScaler
+    if 'processed_file' in st.session_state:
+        try:
+            # Load processed data
+            processed_file = st.session_state['processed_file']
+            df_processed = pd.read_csv(processed_file, encoding='utf-8-sig')
 
-        # เตรียมข้อมูลสำหรับ Anomaly Detection
-        anomaly_data = user_behavior[['Total Incidents', 'Average Severity']]
-        scaler = StandardScaler()
-        scaled_data = scaler.fit_transform(anomaly_data)
+            # Step 1: ตรวจสอบและแปลงคอลัมน์ Severity เป็นตัวเลข หากจำเป็น
+            if 'Severity' in df_processed.columns:
+                try:
+                    df_processed['Severity'] = df_processed['Severity'].astype(str)
+                except Exception as e:
+                    st.error(f"Error converting Severity column: {e}")
+            else:
+                st.error("Column 'Severity' not found in the dataset.")
+                st.stop()
 
-        # ใช้ Isolation Forest
-        isolation_forest = IsolationForest(random_state=42)
-        isolation_forest.fit(scaled_data)  # เรียกใช้ fit ก่อน
+            # Step 2: ตรวจสอบคอลัมน์วันที่และเวลา
+            if 'Occurred (UTC)' in df_processed.columns:
+                date_column = 'Occurred (UTC)'
+            elif 'Time' in df_processed.columns:
+                date_column = 'Time'
+            else:
+                st.error("No valid date or time column found in the dataset.")
+                st.stop()
 
-        # คำนวณ Anomaly Score และคาดการณ์ Anomaly
-        user_behavior['Anomaly Score'] = isolation_forest.decision_function(scaled_data)
-        user_behavior['Anomaly'] = isolation_forest.predict(scaled_data)
+            # Step 3: วิเคราะห์พฤติกรรมของ Event User
+            st.subheader("Step 1: User Behavior Analysis")
 
-        # แปลง Anomaly Score ให้เป็นค่าบวก
-        user_behavior['Anomaly Score (Positive)'] = user_behavior['Anomaly Score'].abs()
+            # จัดกลุ่มข้อมูลโดย Event User
+            user_behavior = df_processed.groupby('Event User').agg({
+                'Incident Type': lambda x: ', '.join(x.astype(str).unique()),  # รวม Incident Type
+                'Severity': lambda x: ', '.join(x.astype(str).unique()),  # รวม Severity
+                date_column: ['min', 'max']  # แสดงช่วงเวลาของเหตุการณ์
+            }).reset_index()
 
-        # เลือก Top 10 Anomalous Users
-        anomalies = user_behavior[user_behavior['Anomaly'] == -1].nlargest(10, 'Anomaly Score')
-        st.write("Top 10 Anomalous Users:")
-        st.dataframe(anomalies)
+            # ตั้งชื่อคอลัมน์ใหม่
+            user_behavior.columns = ['Event User', 'Incident Types', 'Severities', 'First Access', 'Last Access']
 
-        # Visualize Top 10 Anomalies
-        anomaly_fig = px.scatter(
-        anomalies,
-        x='Total Incidents',
-        y='Average Severity',
-        size='Anomaly Score (Positive)',  # ใช้ค่าบวกสำหรับ size
-        color='Anomaly Score',
-        title="Top 10 Anomalous User Behavior",
-        labels={"Total Incidents": "Number of Incidents", "Average Severity": "Severity"}
-        )
-        st.plotly_chart(anomaly_fig)
+            # แสดงข้อมูลในตาราง
+            st.write("Event User Behavior Overview:")
+            st.dataframe(user_behavior)
 
-            # Step 5: Behavior Clustering
-            st.subheader("Step 3: Behavior Clustering")
-            from sklearn.cluster import KMeans
-
-            # Apply K-Means Clustering
-            kmeans = KMeans(n_clusters=5, random_state=42)
-            user_behavior['Cluster'] = kmeans.fit_predict(scaled_data)
-
-            # Visualize Clusters
-            cluster_fig = px.scatter(
+            # Visualization for Event User by Severity
+            st.subheader("Visualization: Event User by Severity and Incident Types")
+            severity_fig = px.bar(
                 user_behavior,
-                x='Total Incidents',
-                y='Average Severity',
-                color='Cluster',
-                title="User Behavior Clustering: 5 Groups",
-                labels={"Cluster": "Cluster Group"}
+                x='Event User',
+                y='Severities',  # ใช้ Severity แสดง
+                color='Incident Types',  # ใช้ Incident Types เป็นสี
+                title="Event User by Severity and Incident Types",
+                labels={"Severities": "Severity Levels", "Incident Types": "Incident Types"}
             )
-            st.plotly_chart(cluster_fig)
-
-            # อธิบายกลุ่มพฤติกรรม
-            st.markdown("### Cluster Characteristics")
-            clusters_description = {
-                0: "Clipboard & Cloud Users: Copying data to the clipboard and using cloud applications.",
-                1: "High-Risk Storage & Print: High usage of removable storage or printing data, indicating risk of data being taken outside the organization.",
-                2: "Mixed Activity Users: Engaging in a variety of incident types, such as removable storage, screen capturing, and web access.",
-                3: "File Access & Cloud Users: Accessing files through applications with lower risk but still requiring monitoring.",
-                4: "Screen Capture & Web Users: Focusing on screen capturing and web usage, which may indicate data monitoring concerns."
-            }
-
-            for cluster, description in clusters_description.items():
-                st.markdown(f"**Cluster {cluster}:** {description}")
+            st.plotly_chart(severity_fig)
 
         except Exception as e:
             st.error(f"Error analyzing user behavior: {e}")
     else:
         st.warning("No processed file found. Please identify incidents first.")
-
-
 
