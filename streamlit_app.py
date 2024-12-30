@@ -6,8 +6,8 @@ import plotly.express as px
 import plotly.express as px
 
 # File paths
-INCIDENT_FILE = r"D:\NIDA_MADT\IS_Project\synthetic_incident_data_#1_edit.csv"
-DICTIONARY_FILE = r"D:\NIDA_MADT\IS_Project\data_dictionary2.csv"
+INCIDENT_FILE = "https://drive.google.com/uc?id=1RF7pbtpx9OjiqKhASwjxmpJfHHP9ulkv"
+DICTIONARY_FILE = "https://drive.google.com/uc?id=1ueLKSgaNhvPEAjJsqad4iMcDfxsM8Nie"
 OUTPUT_DIR = "./output_files"  # Directory for saving processed files
 os.makedirs(OUTPUT_DIR, exist_ok=True)  # Create directory if not exists
 
