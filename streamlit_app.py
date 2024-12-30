@@ -179,3 +179,31 @@ elif selected == "Pattern Mining":
             st.error(f"Error during pattern mining: {e}")
     else:
         st.warning("No processed file found. Please identify incidents first.")
+# Frequent Itemsets
+if not frequent_itemsets.empty:
+    st.write("Frequent Itemsets:")
+    st.dataframe(frequent_itemsets)
+
+    # คำอธิบายผลลัพธ์
+    st.markdown("""
+    - **Frequent Itemsets** แสดงกลุ่มเหตุการณ์ที่มักเกิดพร้อมกันในข้อมูล
+    - ค่า Support บ่งบอกถึงสัดส่วนของข้อมูลที่เหตุการณ์เหล่านี้เกิดขึ้นร่วมกัน
+    - **การดำเนินการต่อไป**:
+        1. โฟกัสกลุ่มที่มีค่า Support สูง เพื่อวิเคราะห์ความเชื่อมโยง
+        2. ใช้ข้อมูลนี้สร้างกฎความสัมพันธ์เพิ่มเติม
+    """)
+
+# Association Rules
+if not rules.empty:
+    st.write("Association Rules:")
+    st.dataframe(rules)
+
+    # คำอธิบายผลลัพธ์
+    st.markdown("""
+    - **Association Rules** แสดงกฎความสัมพันธ์ระหว่างเหตุการณ์
+    - ค่า Confidence บ่งบอกความน่าจะเป็นที่เหตุการณ์ปลายทาง (Consequent) จะเกิด เมื่อเหตุการณ์ต้นทาง (Antecedent) เกิดขึ้น
+    - ค่า Lift > 1 บ่งชี้ว่าความสัมพันธ์แข็งแรง
+    - **การดำเนินการต่อไป**:
+        1. ใช้กฎที่มีค่า Confidence และ Lift สูง เพื่อสร้างระบบแจ้งเตือน
+        2. วิเคราะห์เหตุการณ์ Antecedent ที่เกิดบ่อยเพื่อปรับปรุงนโยบาย
+    """)
