@@ -297,5 +297,9 @@ elif selected == "User Behavior Analysis":
             title="Timeline of Incidents for Top 5 Users (Last Month)",
             labels={'Occurred (UTC)': 'Date', 'Incident Count': 'Number of Incidents'},
             markers=True
-    )
-    st.plotly_chart(fig)
+        )
+        st.plotly_chart(fig)
+    except Exception as e:
+            st.error(f"Error analyzing user behavior: {e}")
+    else:
+        st.warning("No processed file found. Please identify incidents first.")
