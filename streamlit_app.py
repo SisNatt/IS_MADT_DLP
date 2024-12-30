@@ -270,85 +270,86 @@ elif selected == "User Behavior Analysis":
             st.plotly_chart(fig)
 
            # Step 3: Focus on Match_Label = False
-st.subheader("Step 3: Focus on Match_Label = False")
-df_processed['Match_Label'] = df_processed['Match_Label'].apply(
-    lambda x: True if str(x).strip().lower() == 'true' else False
-)
-df_false = df_processed[df_processed['Match_Label'] == False]
-st.write(f"Total False records: {len(df_false)}")
+            st.subheader("Step 3: Focus on Match_Label = False")
+            df_processed['Match_Label'] = df_processed['Match_Label'].apply(
+            lambda x: True if str(x).strip().lower() == 'true' else False
+            )
+            df_false = df_processed[df_processed['Match_Label'] == False]
+            st.write(f"Total False records: {len(df_false)}")
 
-# Display False data
-with st.expander("View False Data"):
-    st.dataframe(df_false)
+            # Display False data
+            with st.expander("View False Data"):
+            st.dataframe(df_false)
 
-# False Severity Analysis
-if 'Severity' in df_false.columns:
-    st.subheader("False Severity Analysis")
-    false_severity_count = df_false['Severity'].value_counts().reset_index()
-    false_severity_count.columns = ['Severity', 'Count']
-    false_severity_fig = px.bar(
-        false_severity_count,
-        x='Severity',
-        y='Count',
-        color='Count',
-        title="Severity Distribution for False Match_Label"
-    )
-    st.plotly_chart(false_severity_fig)
+            # False Severity Analysis
+            if 'Severity' in df_false.columns:
+            st.subheader("False Severity Analysis")
+            false_severity_count = df_false['Severity'].value_counts().reset_index()
+            false_severity_count.columns = ['Severity', 'Count']
+            false_severity_fig = px.bar(
+            false_severity_count,
+            x='Severity',
+            y='Count',
+            color='Count',
+            title="Severity Distribution for False Match_Label"
+            )
+            st.plotly_chart(false_severity_fig)
 
-# False Incident Type Analysis
-if 'Incident Type' in df_false.columns:
-    st.subheader("False Incident Type Analysis")
-    false_incident_type_count = df_false['Incident Type'].value_counts().reset_index()
-    false_incident_type_count.columns = ['Incident Type', 'Count']
-    false_incident_type_fig = px.bar(
+        # False Incident Type Analysis
+        if 'Incident Type' in df_false.columns:
+        st.subheader("False Incident Type Analysis")
+        false_incident_type_count = df_false['Incident Type'].value_counts().reset_index()
+        false_incident_type_count.columns = ['Incident Type', 'Count']
+        false_incident_type_fig = px.bar(
         false_incident_type_count,
         x='Incident Type',
         y='Count',
         color='Count',
         title="Incident Type Distribution for False Match_Label"
-    )
-    st.plotly_chart(false_incident_type_fig)
+        )
+        st.plotly_chart(false_incident_type_fig)
 
-# Frequent Words in Evident_data for False
-if 'Evident_data' in df_false.columns:
-    st.subheader("Frequent Words in Evident_data (False)")
-    from collections import Counter
-    evident_words = df_false['Evident_data'].dropna().str.split().sum()
-    word_counts = Counter(evident_words).most_common(10)
-    word_df = pd.DataFrame(word_counts, columns=['Word', 'Count'])
+        # Frequent Words in Evident_data for False
+        if 'Evident_data' in df_false.columns:
+        st.subheader("Frequent Words in Evident_data (False)")
+        from collections import Counter
+        evident_words = df_false['Evident_data'].dropna().str.split().sum()
+        word_counts = Counter(evident_words).most_common(10)
+        word_df = pd.DataFrame(word_counts, columns=['Word', 'Count'])
 
-    # Display frequent words
-    st.dataframe(word_df)
-    word_fig = px.bar(
+        # Display frequent words
+        st.dataframe(word_df)
+        word_fig = px.bar(
         word_df,
         x='Word',
         y='Count',
         color='Count',
         title="Top Words in Evident_data for False Match_Label"
-    )
-    st.plotly_chart(word_fig)
+        )
+        st.plotly_chart(word_fig)
 
-# Top 3 Classifications for False
-if 'Classification' in df_false.columns:
-    st.subheader("Top 3 Classifications for False Match_Label")
-    false_classifications = df_false['Classification'].value_counts().reset_index().head(3)
-    false_classifications.columns = ['Classification', 'Count']
+        # Top 3 Classifications for False
+        if 'Classification' in df_false.columns:
+        st.subheader("Top 3 Classifications for False Match_Label")
+        false_classifications = df_false['Classification'].value_counts().reset_index().head(3)
+        false_classifications.columns = ['Classification', 'Count']
 
-    # Display Top 3 Classifications
-    st.dataframe(false_classifications)
+        # Display Top 3 Classifications
+        st.dataframe(false_classifications)
 
-    # Visualization for Top 3 Classifications
-    classification_fig = px.bar(
+        # Visualization for Top 3 Classifications
+        classification_fig = px.bar(
         false_classifications,
         x='Classification',
         y='Count',
         color='Count',
         title="Top 3 Classifications for False Match_Label"
-    )
-    st.plotly_chart(classification_fig)
+        )
+        st.plotly_chart(classification_fig)
+        else:
+        st.warning("Column 'Classification' not found in the dataset.")
+
+    except Exception as e:
+        st.error(f"Error analyzing user behavior: {e}")
 else:
-    st.warning("Column 'Classification' not found in the dataset.")
-except Exception as e:
-            st.error(f"Error analyzing user behavior: {e}")
-    else:
-        st.warning("No processed file found. Please identify incidents first.")
+    st.warning("No processed file found. Please identify incidents first.")
