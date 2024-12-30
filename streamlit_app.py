@@ -259,39 +259,43 @@ elif selected == "User Behavior Analysis":
             )
             st.plotly_chart(fig)
 
-           from sklearn.preprocessing import StandardScaler
-            from sklearn.cluster import KMeans
-            import plotly.express as px
 
-            st.subheader("Clustering Users Based on Behavior")
+            # Import necessary library for clustering
+            from sklearn.preprocessing import StandardScaler
 
-            # Prepare features for clustering
-            features = df_processed.groupby('Event User').agg({
-            'Severity': lambda x: (x == 'Critical').sum(),
-            'Incident Type': 'count'
-            }).reset_index()
-            features.columns = ['Event User', 'Critical Incidents', 'Total Incidents']
+            # Filter data for the last month
+            st.subheader("Timeline of Top 5 Users' Incidents (Last Month)")
 
-            # Standardize features
-            scaler = StandardScaler()
-            scaled_features = scaler.fit_transform(features[['Critical Incidents', 'Total Incidents']])
+            # Ensure 'Occurred (UTC)' is in datetime format
+            df_processed['Occurred (UTC)'] = pd.to_datetime(df_processed['Occurred (UTC)'])
 
-            # Perform K-Means Clustering
-            num_clusters = st.slider("Select Number of Clusters", 2, 10, 3)
-            kmeans = KMeans(n_clusters=num_clusters, random_state=42)
-            features['Cluster'] = kmeans.fit_predict(scaled_features)
+            # Get last month's date range
+            last_month = datetime.now() - pd.DateOffset(months=1)
+            filtered_data = df_processed[df_processed['Occurred (UTC)'] >= last_month]
 
-            # Visualize clusters
-            fig = px.scatter(
-            features,
-            x='Critical Incidents',
-            y='Total Incidents',
-            color='Cluster',
-            title="User Clusters Based on Behavior",
-            labels={'Critical Incidents': 'Number of Critical Incidents', 'Total Incidents': 'Total Incidents'}
+            # Count total incidents per user
+            incident_user_count = filtered_data['Event User'].value_counts().reset_index()
+            incident_user_count.columns = ['Event User', 'Total Incidents']
+
+            # Identify top 5 users with the most incidents
+            top_users = incident_user_count.head(5)['Event User'].tolist()
+
+            # Filter data for the top 5 users
+            filtered_data_top_users = filtered_data[filtered_data['Event User'].isin(top_users)]
+
+            # Group data by date and user
+            timeline_data = filtered_data_top_users.groupby(
+            [filtered_data_top_users['Occurred (UTC)'].dt.date, 'Event User']
+            ).size().reset_index(name='Incident Count')
+
+            # Plot timeline
+            fig = px.line(
+            timeline_data,
+            x='Occurred (UTC)',
+            y='Incident Count',
+            color='Event User',
+            title="Timeline of Incidents for Top 5 Users (Last Month)",
+            labels={'Occurred (UTC)': 'Date', 'Incident Count': 'Number of Incidents'},
+            markers=True
             )
             st.plotly_chart(fig)
-
-
-
-
