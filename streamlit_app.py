@@ -301,5 +301,5 @@ elif selected == "User Behavior Analysis":
         st.plotly_chart(fig)
     except Exception as e:
             st.error(f"Error analyzing user behavior: {e}")
-    else:
+else:
         st.warning("No processed file found. Please identify incidents first.")
