@@ -14,8 +14,8 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 # Main Menu
 selected = option_menu(
     "Main Menu", 
-    ["Home - Raw Data", "Identify Incidents", "View Processed Data"], 
-    icons=['house', 'search', 'bar-chart'], 
+    ["Home - Raw Data", "Identify Incidents", "View Processed Data", "Pattern Mining"], 
+    icons=['house', 'search', 'bar-chart', 'diagram-3'], 
     menu_icon="cast", 
     default_index=0
 )
@@ -121,3 +121,64 @@ elif selected == "View Processed Data":
 
 from mlxtend.frequent_patterns import apriori, association_rules
 import plotly.express as px
+
+# Page 4: Pattern Mining
+elif selected == "Pattern Mining":
+    st.title("🔍 Pattern Mining for Incidents")
+
+    if 'processed_file' in st.session_state:
+        try:
+            processed_file = st.session_state['processed_file']
+            df_processed = pd.read_csv(processed_file, encoding='utf-8-sig')
+
+            # Check for Incident Type column
+            if 'Incident Type' not in df_processed.columns:
+                st.error("The column 'Incident Type' is not available in the processed data.")
+                st.stop()
+
+            # Prepare data for Apriori
+            st.subheader("Step 1: Prepare Data")
+            incident_types = df_processed['Incident Type'].str.get_dummies(sep=',')
+            st.write("Dummy-encoded Incident Types:")
+            st.dataframe(incident_types)
+
+            # Apriori Algorithm
+            st.subheader("Step 2: Find Frequent Itemsets")
+            min_support = st.slider("Select Minimum Support", 0.01, 1.0, 0.05, step=0.01)
+            frequent_itemsets = apriori(incident_types, min_support=min_support, use_colnames=True)
+
+            if not frequent_itemsets.empty:
+                st.write("Frequent Itemsets:")
+                st.dataframe(frequent_itemsets)
+            else:
+                st.warning("No frequent itemsets found. Try reducing the minimum support value.")
+
+            # Association Rules
+            if not frequent_itemsets.empty:
+                st.subheader("Step 3: Generate Association Rules")
+                min_confidence = st.slider("Select Minimum Confidence", 0.1, 1.0, 0.5, step=0.1)
+                rules = association_rules(frequent_itemsets, metric="confidence", min_threshold=min_confidence)
+
+                if not rules.empty:
+                    st.write("Association Rules:")
+                    st.dataframe(rules)
+
+                    # Visualization
+                    st.subheader("Step 4: Visualization of Rules")
+                    fig = px.scatter(
+                        rules,
+                        x="support",
+                        y="confidence",
+                        size="lift",
+                        color="antecedents",
+                        title="Support vs Confidence",
+                        labels={"antecedents": "Antecedent Patterns"}
+                    )
+                    st.plotly_chart(fig)
+                else:
+                    st.warning("No association rules found. Try reducing the minimum confidence value.")
+        except Exception as e:
+            st.error(f"Error during pattern mining: {e}")
+    else:
+        st.warning("No processed file found. Please identify incidents first.")
+
