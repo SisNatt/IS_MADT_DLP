@@ -221,17 +221,18 @@ elif selected == "User Behavior Analysis":
 
     if 'processed_file' in st.session_state:
         try:
+            # Load the processed file
             processed_file = st.session_state['processed_file']
             df_processed = pd.read_csv(processed_file, encoding='utf-8-sig')
 
             # Check for necessary columns
-            required_columns = ['Event User', 'Incident Type', 'Severity', 'Occurred (UTC)', 'Destination']
+            required_columns = ['Event User', 'Incident Type', 'Severity', 'Occurred (UTC)', 'Destination', 'Match_Label']
             missing_columns = [col for col in required_columns if col not in df_processed.columns]
             if missing_columns:
                 st.error(f"Missing required columns: {', '.join(missing_columns)}")
                 st.stop()
 
-            # Analyze Behavior Profile
+            # Step 1: User Behavior Profile
             st.subheader("Step 1: User Behavior Profile")
             user_behavior = df_processed.groupby('Event User').agg({
                 'Incident Type': lambda x: x.mode().iloc[0] if not x.mode().empty else None,
@@ -243,7 +244,7 @@ elif selected == "User Behavior Analysis":
                                      'Most Frequent Destination', 'Total Incidents']
             st.dataframe(user_behavior)
 
-            # Timeline of Top 5 Users
+            # Step 2: Timeline of Top 5 Users
             st.subheader("Timeline of Top 5 Users' Incidents (Last Month)")
             df_processed['Occurred (UTC)'] = pd.to_datetime(df_processed['Occurred (UTC)'])
             last_month = datetime.now() - pd.DateOffset(months=1)
@@ -267,6 +268,66 @@ elif selected == "User Behavior Analysis":
                 markers=True
             )
             st.plotly_chart(fig)
+
+            # Step 3: Focus on Match_Label = False
+            st.subheader("Step 3: Focus on Match_Label = False")
+            df_processed['Match_Label'] = df_processed['Match_Label'].apply(
+                lambda x: True if str(x).strip().lower() == 'true' else False
+            )
+            df_false = df_processed[df_processed['Match_Label'] == False]
+            st.write(f"Total False records: {len(df_false)}")
+
+            # Display False data
+            with st.expander("View False Data"):
+                st.dataframe(df_false)
+
+            # False Severity Analysis
+            if 'Severity' in df_false.columns:
+                st.subheader("False Severity Analysis")
+                false_severity_count = df_false['Severity'].value_counts().reset_index()
+                false_severity_count.columns = ['Severity', 'Count']
+                false_severity_fig = px.bar(
+                    false_severity_count,
+                    x='Severity',
+                    y='Count',
+                    color='Count',
+                    title="Severity Distribution for False Match_Label"
+                )
+                st.plotly_chart(false_severity_fig)
+
+            # False Incident Type Analysis
+            if 'Incident Type' in df_false.columns:
+                st.subheader("False Incident Type Analysis")
+                false_incident_type_count = df_false['Incident Type'].value_counts().reset_index()
+                false_incident_type_count.columns = ['Incident Type', 'Count']
+                false_incident_type_fig = px.bar(
+                    false_incident_type_count,
+                    x='Incident Type',
+                    y='Count',
+                    color='Count',
+                    title="Incident Type Distribution for False Match_Label"
+                )
+                st.plotly_chart(false_incident_type_fig)
+
+            # Frequent Words in Evident_data for False
+            if 'Evident_data' in df_false.columns:
+                st.subheader("Frequent Words in Evident_data (False)")
+                from collections import Counter
+                evident_words = df_false['Evident_data'].dropna().str.split().sum()
+                word_counts = Counter(evident_words).most_common(10)
+                word_df = pd.DataFrame(word_counts, columns=['Word', 'Count'])
+
+                # Display frequent words
+                st.dataframe(word_df)
+                word_fig = px.bar(
+                    word_df,
+                    x='Word',
+                    y='Count',
+                    color='Count',
+                    title="Top Words in Evident_data for False Match_Label"
+                )
+                st.plotly_chart(word_fig)
+
         except Exception as e:
             st.error(f"Error analyzing user behavior: {e}")
     else:
