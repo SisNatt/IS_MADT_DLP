@@ -194,5 +194,88 @@ elif selected == "Pattern Mining":
     else:
         st.warning("No processed file found. Please identify incidents first.")
 
+# Page 5: User Behavior Analysis
+elif selected == "User Behavior Analysis":
+    st.title("📈 User Behavior Analysis")
+
+    if 'processed_file' in st.session_state:
+        try:
+            processed_file = st.session_state['processed_file']
+            df_processed = pd.read_csv(processed_file, encoding='utf-8-sig')
+
+            # Check for necessary columns
+            required_columns = ['Event User', 'Incident Type', 'Severity', 'Occurred (UTC)', 'Destination']
+            missing_columns = [col for col in required_columns if col not in df_processed.columns]
+            if missing_columns:
+                st.error(f"Missing required columns: {', '.join(missing_columns)}")
+                st.stop()
+
+            # Analyze Behavior Profile
+            st.subheader("Step 1: User Behavior Profile")
+            user_behavior = df_processed.groupby('Event User').agg({
+                'Incident Type': lambda x: x.mode().iloc[0] if not x.mode().empty else None,
+                'Severity': lambda x: x.mode().iloc[0] if not x.mode().empty else None,
+                'Destination': lambda x: x.mode().iloc[0] if not x.mode().empty else None,
+                'Occurred (UTC)': 'count'
+            }).reset_index()
+            user_behavior.columns = ['Event User', 'Most Frequent Incident Type', 'Most Frequent Severity',
+                                     'Most Frequent Destination', 'Total Incidents']
+            st.dataframe(user_behavior)
+
+            # Visualize Behavior
+            st.subheader("Step 2: Visualize Behavior Trends")
+            trend_df = df_processed[['Occurred (UTC)', 'Event User']].copy()
+            trend_df['Occurred (UTC)'] = pd.to_datetime(trend_df['Occurred (UTC)'])
+            trend_df['Date'] = trend_df['Occurred (UTC)'].dt.date
+            daily_trends = trend_df.groupby(['Date', 'Event User']).size().reset_index(name='Incident Count')
+
+            fig = px.line(
+                daily_trends,
+                x='Date',
+                y='Incident Count',
+                color='Event User',
+                title="Daily Incident Trends by User",
+                labels={'Incident Count': 'Number of Incidents', 'Date': 'Date'}
+            )
+            st.plotly_chart(fig)
+
+            # Cluster Analysis
+            st.subheader("Step 3: Cluster Users Based on Behavior")
+            from sklearn.preprocessing import StandardScaler
+            from sklearn.cluster import KMeans
+            from sklearn.decomposition import PCA
+
+            # Prepare data for clustering
+            clustering_features = user_behavior[['Total Incidents']]
+            scaler = StandardScaler()
+            clustering_data = scaler.fit_transform(clustering_features)
+
+            # Determine optimal number of clusters
+            num_clusters = st.slider("Select Number of Clusters", 2, 10, 3, step=1)
+            kmeans = KMeans(n_clusters=num_clusters, random_state=42)
+            user_behavior['Cluster'] = kmeans.fit_predict(clustering_data)
+
+            # Visualize clusters
+            st.write(f"Users grouped into {num_clusters} clusters:")
+            pca = PCA(n_components=2)
+            clustering_data_2d = pca.fit_transform(clustering_data)
+            cluster_df = pd.DataFrame(clustering_data_2d, columns=['PC1', 'PC2'])
+            cluster_df['Cluster'] = user_behavior['Cluster']
+            cluster_fig = px.scatter(
+                cluster_df,
+                x='PC1',
+                y='PC2',
+                color='Cluster',
+                title="User Clusters Based on Behavior",
+                labels={'PC1': 'Principal Component 1', 'PC2': 'Principal Component 2'}
+            )
+            st.plotly_chart(cluster_fig)
+
+        except Exception as e:
+            st.error(f"Error analyzing user behavior: {e}")
+    else:
+        st.warning("No processed file found. Please identify incidents first.")
+
+
 
 
