@@ -100,46 +100,54 @@ elif selected == "View Processed Data":
                     index=0
                 )
 
+                # Map Match_Label to True/False based on checkmark
+                df_processed['Match_Label'] = df_processed['Match_Label'].notnull()
+
                 # Apply filter
                 if match_label_filter == 'All':
                     df_filtered = df_processed
-                else:
-                    df_filtered = df_processed[df_processed['Match_Label'] == match_label_filter]
+                elif match_label_filter == 'True':
+                    df_filtered = df_processed[df_processed['Match_Label'] == True]
+                elif match_label_filter == 'False':
+                    df_filtered = df_processed[df_processed['Match_Label'] == False]
 
                 # Display filtered data
-                st.write(f"Filtered records: {len(df_filtered)}")
-                with st.expander("View Filtered Data"):
-                    st.dataframe(df_filtered)
+                if len(df_filtered) > 0:
+                    st.write(f"Filtered records: {len(df_filtered)}")
+                    with st.expander("View Filtered Data"):
+                        st.dataframe(df_filtered)
 
-                # Severity Count for Filtered Data
-                if 'Severity' in df_filtered.columns:
-                    st.subheader("Severity Count (Filtered by Match_Label)")
-                    severity_count = df_filtered['Severity'].value_counts().reset_index()
-                    severity_count.columns = ['Severity', 'Count']
-                    severity_fig = px.bar(
-                        severity_count,
-                        x='Severity',
-                        y='Count',
-                        color='Count',
-                        title=f"Severity Distribution (Filtered by Match_Label = {match_label_filter})"
-                    )
-                    st.plotly_chart(severity_fig)
+                    # Severity Count for Filtered Data
+                    if 'Severity' in df_filtered.columns:
+                        st.subheader("Severity Count (Filtered by Match_Label)")
+                        severity_count = df_filtered['Severity'].value_counts().reset_index()
+                        severity_count.columns = ['Severity', 'Count']
+                        severity_fig = px.bar(
+                            severity_count,
+                            x='Severity',
+                            y='Count',
+                            color='Count',
+                            title=f"Severity Distribution (Filtered by Match_Label = {match_label_filter})"
+                        )
+                        st.plotly_chart(severity_fig)
 
-                # Incident Type Count for Filtered Data
-                if 'Incident Type' in df_filtered.columns:
-                    st.subheader("Incident Type Count (Filtered by Match_Label)")
-                    incident_type_count = df_filtered['Incident Type'].value_counts().reset_index()
-                    incident_type_count.columns = ['Incident Type', 'Count']
-                    incident_type_fig = px.bar(
-                        incident_type_count,
-                        x='Incident Type',
-                        y='Count',
-                        color='Count',
-                        title=f"Incident Type Distribution (Filtered by Match_Label = {match_label_filter})"
-                    )
-                    st.plotly_chart(incident_type_fig)
+                    # Incident Type Count for Filtered Data
+                    if 'Incident Type' in df_filtered.columns:
+                        st.subheader("Incident Type Count (Filtered by Match_Label)")
+                        incident_type_count = df_filtered['Incident Type'].value_counts().reset_index()
+                        incident_type_count.columns = ['Incident Type', 'Count']
+                        incident_type_fig = px.bar(
+                            incident_type_count,
+                            x='Incident Type',
+                            y='Count',
+                            color='Count',
+                            title=f"Incident Type Distribution (Filtered by Match_Label = {match_label_filter})"
+                        )
+                        st.plotly_chart(incident_type_fig)
+                    else:
+                        st.error("Column 'Incident Type' not found in the processed dataset.")
                 else:
-                    st.error("Column 'Incident Type' not found in the processed dataset.")
+                    st.warning("No records found for the selected Match_Label filter.")
             else:
                 st.error("Column 'Match_Label' does not exist in the dataset.")
         except Exception as e:
