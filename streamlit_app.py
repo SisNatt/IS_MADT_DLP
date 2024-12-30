@@ -83,6 +83,7 @@ elif selected == "View Processed Data":
 
     if 'processed_file' in st.session_state:
         try:
+            # Load the processed file
             processed_file = st.session_state['processed_file']
             df_processed = pd.read_csv(processed_file, encoding='utf-8-sig')
             st.write(f"Total records: {len(df_processed)}")
@@ -90,7 +91,7 @@ elif selected == "View Processed Data":
             with st.expander("View Processed Data"):
                 st.dataframe(df_processed)
 
-            # Match_Label Filter
+            # Check if Match_Label exists
             if 'Match_Label' in df_processed.columns:
                 st.subheader("Filter by Match_Label")
                 match_label_filter = st.radio(
@@ -99,21 +100,29 @@ elif selected == "View Processed Data":
                     index=0
                 )
 
-                if match_label_filter != 'All':
-                    df_filtered = df_processed[df_processed['Match_Label'] == match_label_filter]
-                else:
+                # Apply filter
+                if match_label_filter == 'All':
                     df_filtered = df_processed
+                else:
+                    df_filtered = df_processed[df_processed['Match_Label'] == match_label_filter]
 
+                # Display filtered data
                 st.write(f"Filtered records: {len(df_filtered)}")
-                st.dataframe(df_filtered)
+                with st.expander("View Filtered Data"):
+                    st.dataframe(df_filtered)
 
                 # Severity Count for Filtered Data
                 if 'Severity' in df_filtered.columns:
                     st.subheader("Severity Count (Filtered by Match_Label)")
                     severity_count = df_filtered['Severity'].value_counts().reset_index()
                     severity_count.columns = ['Severity', 'Count']
-                    severity_fig = px.bar(severity_count, x='Severity', y='Count',
-                                          color='Count', title="Severity Distribution (Filtered)")
+                    severity_fig = px.bar(
+                        severity_count,
+                        x='Severity',
+                        y='Count',
+                        color='Count',
+                        title=f"Severity Distribution (Filtered by Match_Label = {match_label_filter})"
+                    )
                     st.plotly_chart(severity_fig)
 
                 # Incident Type Count for Filtered Data
@@ -121,8 +130,13 @@ elif selected == "View Processed Data":
                     st.subheader("Incident Type Count (Filtered by Match_Label)")
                     incident_type_count = df_filtered['Incident Type'].value_counts().reset_index()
                     incident_type_count.columns = ['Incident Type', 'Count']
-                    incident_type_fig = px.bar(incident_type_count, x='Incident Type', y='Count',
-                                               color='Count', title="Incident Type Distribution (Filtered)")
+                    incident_type_fig = px.bar(
+                        incident_type_count,
+                        x='Incident Type',
+                        y='Count',
+                        color='Count',
+                        title=f"Incident Type Distribution (Filtered by Match_Label = {match_label_filter})"
+                    )
                     st.plotly_chart(incident_type_fig)
                 else:
                     st.error("Column 'Incident Type' not found in the processed dataset.")
@@ -132,6 +146,7 @@ elif selected == "View Processed Data":
             st.error(f"Error loading processed data: {e}")
     else:
         st.warning("No processed file found. Please identify incidents first.")
+
 
 
 # Page 4: Pattern Mining
