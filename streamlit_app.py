@@ -194,7 +194,6 @@ elif selected == "Pattern Mining":
     else:
         st.warning("No processed file found. Please identify incidents first.")
 
-# Page: User and Department Behavior Analysis
 if selected == "User Behavior Analysis":
     st.title("👤 User and Department Behavior Analysis")
 
@@ -203,12 +202,21 @@ if selected == "User Behavior Analysis":
             processed_file = st.session_state['processed_file']
             df_processed = pd.read_csv(processed_file, encoding='utf-8-sig')
 
+            # ตรวจสอบคอลัมน์สำหรับวันที่และเวลา
+            if 'Occurred (UTC)' in df_processed.columns:
+                date_column = 'Occurred (UTC)'
+            elif 'Time' in df_processed.columns:
+                date_column = 'Time'
+            else:
+                st.error("No valid date or time column found in the dataset.")
+                st.stop()
+
             # Step 1: Aggregate Data by Event User
             st.subheader("Step 1: User Behavior Analysis")
             user_behavior = df_processed.groupby('Event User').agg({
                 'Incident Type': 'count',
                 'Severity': 'mean',
-                'Timestamp': ['min', 'max']
+                date_column: ['min', 'max']  # ใช้คอลัมน์วันที่ที่ตรวจพบ
             }).reset_index()
 
             user_behavior.columns = ['Event User', 'Total Incidents', 'Average Severity', 'First Access', 'Last Access']
@@ -245,30 +253,6 @@ if selected == "User Behavior Analysis":
                 title="Department Behavior: Total Incidents and Average Severity"
             )
             st.plotly_chart(department_fig)
-
-            # Step 3: Anomaly Detection for Event Users
-            st.subheader("Step 3: Detect Anomalous User Behavior")
-            from sklearn.ensemble import IsolationForest
-            from sklearn.preprocessing import StandardScaler
-
-            # Prepare data for anomaly detection
-            anomaly_data = user_behavior[['Total Incidents', 'Average Severity']]
-            scaler = StandardScaler()
-            scaled_data = scaler.fit_transform(anomaly_data)
-
-            # Apply Isolation Forest
-            isolation_forest = IsolationForest(random_state=42)
-            user_behavior['Anomaly'] = isolation_forest.fit_predict(scaled_data)
-
-            # Visualize Anomalies
-            anomaly_fig = px.scatter(
-                user_behavior, 
-                x='Total Incidents', 
-                y='Average Severity',
-                color='Anomaly', 
-                title="Anomaly Detection in User Behavior"
-            )
-            st.plotly_chart(anomaly_fig)
 
         except Exception as e:
             st.error(f"Error analyzing user and department behavior: {e}")
