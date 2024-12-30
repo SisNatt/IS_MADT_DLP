@@ -5,6 +5,7 @@ import os
 from datetime import datetime
 from mlxtend.frequent_patterns import apriori, association_rules
 import plotly.express as px
+from sklearn.preprocessing import StandardScaler
 
 # File paths
 INCIDENT_FILE = "https://drive.google.com/uc?id=1ueLKSgaNhvPEAjJsqad4iMcDfxsM8Nie"
@@ -105,8 +106,7 @@ elif selected == "View Processed Data":
                 incident_type_count = df_processed['Incident Type'].value_counts().reset_index()
                 incident_type_count.columns = ['Incident Type', 'Count']
                 incident_type_fig = px.bar(incident_type_count, x='Incident Type', y='Count',
-                                           color='Count', color_continuous_scale='RdBu',
-                                           title="Incident Type Distribution")
+                                           color='Count', title="Incident Type Distribution")
                 st.plotly_chart(incident_type_fig)
             else:
                 st.error("Column 'Incident Type' not found in the processed dataset.")
@@ -117,8 +117,7 @@ elif selected == "View Processed Data":
                 match_label_count = df_processed['Match_Label'].value_counts().reset_index()
                 match_label_count.columns = ['Match_Label', 'Count']
                 match_label_fig = px.bar(match_label_count, x='Match_Label', y='Count',
-                                         color='Count', color_continuous_scale='RdBu',
-                                         title="Match Label Distribution")
+                                         color='Count', title="Match Label Distribution")
                 st.plotly_chart(match_label_fig)
             else:
                 st.error("The column 'Match_Label' does not exist in the dataset.")
@@ -164,16 +163,9 @@ elif selected == "Pattern Mining":
                 min_confidence = st.slider("Select Minimum Confidence", 0.1, 1.0, 0.5, step=0.1)
                 rules = association_rules(frequent_itemsets, metric="confidence", min_threshold=min_confidence)
 
-                if 'rules' in locals() and not rules.empty:
+                if not rules.empty:
                     st.write("Association Rules:")
                     st.dataframe(rules)
-
-                    # Explanation
-                    st.markdown("""
-                    - **Association Rules** แสดงกฎความสัมพันธ์ระหว่างเหตุการณ์
-                    - ค่า Confidence บ่งบอกความน่าจะเป็นที่เหตุการณ์ปลายทางจะเกิดขึ้นเมื่อมีเหตุการณ์ต้นทาง
-                    - ค่า Lift > 1 บ่งบอกถึงความสัมพันธ์ที่มีความแข็งแรง
-                    """)
 
                     # Visualization
                     st.subheader("Step 4: Visualization of Rules")
@@ -222,84 +214,31 @@ elif selected == "User Behavior Analysis":
                                      'Most Frequent Destination', 'Total Incidents']
             st.dataframe(user_behavior)
 
-          # Filter data for the last month
+            # Timeline of Top 5 Users
             st.subheader("Timeline of Top 5 Users' Incidents (Last Month)")
-
-            # Ensure 'Occurred (UTC)' is in datetime format
             df_processed['Occurred (UTC)'] = pd.to_datetime(df_processed['Occurred (UTC)'])
-
-            # Get last month's date range
             last_month = datetime.now() - pd.DateOffset(months=1)
             filtered_data = df_processed[df_processed['Occurred (UTC)'] >= last_month]
-
-            # Count total incidents per user
             incident_user_count = filtered_data['Event User'].value_counts().reset_index()
             incident_user_count.columns = ['Event User', 'Total Incidents']
-
-            # Identify top 5 users with the most incidents
             top_users = incident_user_count.head(5)['Event User'].tolist()
-
-            # Filter data for the top 5 users
             filtered_data_top_users = filtered_data[filtered_data['Event User'].isin(top_users)]
-
-            # Group data by date and user
             timeline_data = filtered_data_top_users.groupby(
-            [filtered_data_top_users['Occurred (UTC)'].dt.date, 'Event User']
+                [filtered_data_top_users['Occurred (UTC)'].dt.date, 'Event User']
             ).size().reset_index(name='Incident Count')
 
             # Plot timeline
             fig = px.line(
-            timeline_data,
-            x='Occurred (UTC)',
-            y='Incident Count',
-            color='Event User',
-            title="Timeline of Incidents for Top 5 Users (Last Month)",
-            labels={'Occurred (UTC)': 'Date', 'Incident Count': 'Number of Incidents'},
-            markers=True
+                timeline_data,
+                x='Occurred (UTC)',
+                y='Incident Count',
+                color='Event User',
+                title="Timeline of Incidents for Top 5 Users (Last Month)",
+                labels={'Occurred (UTC)': 'Date', 'Incident Count': 'Number of Incidents'},
+                markers=True
             )
             st.plotly_chart(fig)
-
-
-            # Import necessary library for clustering
-            from sklearn.preprocessing import StandardScaler
-
-            # Filter data for the last month
-            st.subheader("Timeline of Top 5 Users' Incidents (Last Month)")
-
-            # Ensure 'Occurred (UTC)' is in datetime format
-            df_processed['Occurred (UTC)'] = pd.to_datetime(df_processed['Occurred (UTC)'])
-
-            # Get last month's date range
-            last_month = datetime.now() - pd.DateOffset(months=1)
-            filtered_data = df_processed[df_processed['Occurred (UTC)'] >= last_month]
-
-            # Count total incidents per user
-            incident_user_count = filtered_data['Event User'].value_counts().reset_index()
-            incident_user_count.columns = ['Event User', 'Total Incidents']
-
-            # Identify top 5 users with the most incidents
-            top_users = incident_user_count.head(5)['Event User'].tolist()
-
-            # Filter data for the top 5 users
-            filtered_data_top_users = filtered_data[filtered_data['Event User'].isin(top_users)]
-
-            # Group data by date and user
-            timeline_data = filtered_data_top_users.groupby(
-            [filtered_data_top_users['Occurred (UTC)'].dt.date, 'Event User']
-            ).size().reset_index(name='Incident Count')
-
-            # Plot timeline
-            fig = px.line(
-            timeline_data,
-            x='Occurred (UTC)',
-            y='Incident Count',
-            color='Event User',
-            title="Timeline of Incidents for Top 5 Users (Last Month)",
-            labels={'Occurred (UTC)': 'Date', 'Incident Count': 'Number of Incidents'},
-            markers=True
-        )
-    st.plotly_chart(fig)
-    except Exception as e:
+        except Exception as e:
             st.error(f"Error analyzing user behavior: {e}")
-else:
+    else:
         st.warning("No processed file found. Please identify incidents first.")
