@@ -64,36 +64,39 @@ if 'processed_file' in st.session_state:
 
         st.write(f"Total records: {len(df_processed)}")
 
+        # Count by Severity
         if 'Severity' in df_processed.columns:
+            st.subheader("Severity Count")
             severity_count = df_processed['Severity'].value_counts().reset_index()
             severity_count.columns = ['Severity', 'Count']
             severity_fig = px.bar(severity_count, x='Severity', y='Count', color='Count', title="Severity Distribution")
             st.plotly_chart(severity_fig)
         else:
             st.error("Column 'Severity' not found in the processed dataset.")
-    except Exception as e:
-        st.error(f"Error loading processed data: {e}")
-        # Count by Incident Type
-        st.subheader("Incident Type Count")
-        incident_type_count = df_processed['Incident Type'].value_counts().reset_index()
-        incident_type_count.columns = ['Incident Type', 'Count']
 
-        # Interactive bar chart for Incident Type
-        incident_type_fig = px.bar(incident_type_count, x='Incident Type', y='Count',
-                                   color='Count', color_continuous_scale='RdBu',
-                                   title="Incident Type Distribution")
-        st.plotly_chart(incident_type_fig)
+        # Count by Incident Type
+        if 'Incident Type' in df_processed.columns:
+            st.subheader("Incident Type Count")
+            incident_type_count = df_processed['Incident Type'].value_counts().reset_index()
+            incident_type_count.columns = ['Incident Type', 'Count']
+            incident_type_fig = px.bar(incident_type_count, x='Incident Type', y='Count',
+                                       color='Count', color_continuous_scale='RdBu',
+                                       title="Incident Type Distribution")
+            st.plotly_chart(incident_type_fig)
+        else:
+            st.error("Column 'Incident Type' not found in the processed dataset.")
 
         # Match Label Count
-        st.subheader("Match Label Count")
         if 'Match_Label' in df_processed.columns:
+            st.subheader("Match Label Count")
             match_label_count = df_processed['Match_Label'].value_counts().reset_index()
             match_label_count.columns = ['Match_Label', 'Count']
-
-            # Interactive bar chart for Match Label
             match_label_fig = px.bar(match_label_count, x='Match_Label', y='Count',
                                      color='Count', color_continuous_scale='RdBu',
                                      title="Match Label Distribution")
             st.plotly_chart(match_label_fig)
         else:
             st.error("The column 'Match_Label' does not exist in the dataset.")
+
+    except Exception as e:
+        st.error(f"Error loading processed data: {e}")
