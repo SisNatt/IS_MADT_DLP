@@ -222,20 +222,35 @@ elif selected == "User Behavior Analysis":
                                      'Most Frequent Destination', 'Total Incidents']
             st.dataframe(user_behavior)
 
-            # Visualize Behavior
-            st.subheader("Step 2: Visualize Behavior Trends")
-            trend_df = df_processed[['Occurred (UTC)', 'Event User']].copy()
-            trend_df['Occurred (UTC)'] = pd.to_datetime(trend_df['Occurred (UTC)'])
-            trend_df['Date'] = trend_df['Occurred (UTC)'].dt.date
-            daily_trends = trend_df.groupby(['Date', 'Event User']).size().reset_index(name='Incident Count')
+           # Filter for Severity = Critical in the last month
+            st.subheader("Top 5 Users with Critical Severity (Last Month)")
 
-            fig = px.line(
-                daily_trends,
-                x='Date',
-                y='Incident Count',
-                color='Event User',
-                title="Daily Incident Trends by User",
-                labels={'Incident Count': 'Number of Incidents', 'Date': 'Date'}
+            # Ensure 'Occurred (UTC)' is in datetime format
+            df_processed['Occurred (UTC)'] = pd.to_datetime(df_processed['Occurred (UTC)'])
+
+            # Get last month's date range
+            last_month = datetime.now() - pd.DateOffset(months=1)
+            critical_last_month = df_processed[
+            (df_processed['Severity'] == 'Critical') & (df_processed['Occurred (UTC)'] >= last_month)
+            ]
+
+            # Count incidents per user
+            critical_user_count = critical_last_month['Event User'].value_counts().reset_index()
+            critical_user_count.columns = ['Event User', 'Critical Incidents']
+
+            # Display top 5 users
+            top_critical_users = critical_user_count.head(5)
+            st.write("Top 5 Users with the Most Critical Incidents (Last Month):")
+            st.dataframe(top_critical_users)
+
+            # Bar chart
+            fig = px.bar(
+            top_critical_users,
+            x='Event User',
+            y='Critical Incidents',
+            color='Critical Incidents',
+            title="Top 5 Users with Critical Severity Incidents (Last Month)",
+            labels={'Critical Incidents': 'Number of Critical Incidents'}
             )
             st.plotly_chart(fig)
 
