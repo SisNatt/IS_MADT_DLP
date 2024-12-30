@@ -1,4 +1,5 @@
 import streamlit as st
+from streamlit_option_menu import option_menu
 import pandas as pd
 import os
 from datetime import datetime
@@ -10,14 +11,17 @@ DICTIONARY_FILE =  "https://drive.google.com/uc?id=1RF7pbtpx9OjiqKhASwjxmpJfHHP9
 OUTPUT_DIR = "./output_files"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-# Sidebar Navigation
-menu = st.sidebar.selectbox(
-    "Navigation",
-    options=["Home - Raw Data", "Identify Incidents", "View Processed Data"]
+# Main Menu
+selected = option_menu(
+    "Main Menu", 
+    ["Home - Raw Data", "Identify Incidents", "View Processed Data"], 
+    icons=['house', 'search', 'bar-chart'], 
+    menu_icon="cast", 
+    default_index=0
 )
 
 # Page 1: Home - Raw Data
-if menu == "Home - Raw Data":
+if selected == "Home - Raw Data":
     st.title("👮‍♀️👾 Data Loss Prevention reported by ML 🤖")
     st.subheader("Raw Data Overview")
 
@@ -30,7 +34,7 @@ if menu == "Home - Raw Data":
         st.error(f"Error loading raw data: {e}")
 
 # Page 2: Identify Incidents
-elif menu == "Identify Incidents":
+elif selected == "Identify Incidents":
     st.title("🔍 Identify Incidents")
 
     if st.button("Process Incidents"):
@@ -65,7 +69,7 @@ elif menu == "Identify Incidents":
             st.error(f"Error processing incidents: {e}")
 
 # Page 3: View Processed Data
-elif menu == "View Processed Data":
+elif selected == "View Processed Data":
     st.title("📊 View Processed Data")
 
     if 'processed_file' in st.session_state:
@@ -89,28 +93,4 @@ elif menu == "View Processed Data":
 
             # Incident Type Count
             if 'Incident Type' in df_processed.columns:
-                st.subheader("Incident Type Count")
-                incident_type_count = df_processed['Incident Type'].value_counts().reset_index()
-                incident_type_count.columns = ['Incident Type', 'Count']
-                incident_type_fig = px.bar(incident_type_count, x='Incident Type', y='Count',
-                                           color='Count', color_continuous_scale='RdBu',
-                                           title="Incident Type Distribution")
-                st.plotly_chart(incident_type_fig)
-            else:
-                st.error("Column 'Incident Type' not found in the processed dataset.")
-
-            # Match Label Count
-            if 'Match_Label' in df_processed.columns:
-                st.subheader("Match Label Count")
-                match_label_count = df_processed['Match_Label'].value_counts().reset_index()
-                match_label_count.columns = ['Match_Label', 'Count']
-                match_label_fig = px.bar(match_label_count, x='Match_Label', y='Count',
-                                         color='Count', color_continuous_scale='RdBu',
-                                         title="Match Label Distribution")
-                st.plotly_chart(match_label_fig)
-            else:
-                st.error("The column 'Match_Label' does not exist in the dataset.")
-        except Exception as e:
-            st.error(f"Error loading processed data: {e}")
-    else:
-        st.warning("No processed file found. Please identify incidents first.")
+                st.subheader("In
