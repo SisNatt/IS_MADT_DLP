@@ -5,8 +5,8 @@ from datetime import datetime
 import plotly.express as px
 
 # File paths
-INCIDENT_FILE = "https://drive.google.com/uc?id=1RF7pbtpx9OjiqKhASwjxmpJfHHP9ulkv"
-DICTIONARY_FILE = "https://drive.google.com/uc?id=1ueLKSgaNhvPEAjJsqad4iMcDfxsM8Nie"
+INCIDENT_FILE = "https://drive.google.com/uc?id=1ueLKSgaNhvPEAjJsqad4iMcDfxsM8Nie"
+DICTIONARY_FILE =  "https://drive.google.com/uc?id=1RF7pbtpx9OjiqKhASwjxmpJfHHP9ulkv"
 OUTPUT_DIR = "./output_files"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
