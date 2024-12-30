@@ -194,9 +194,9 @@ elif selected == "Pattern Mining":
     else:
         st.warning("No processed file found. Please identify incidents first.")
 
-# Page: User and Department Behavior Analysis
+# Page: User Behavior Analysis
 if selected == "User Behavior Analysis":
-    st.title("👤 User and Department Behavior Analysis")
+    st.title("👤 User Behavior Analysis")
 
     if 'processed_file' in st.session_state:
         try:
@@ -207,9 +207,7 @@ if selected == "User Behavior Analysis":
             # Step 1: ตรวจสอบและแปลงคอลัมน์ Severity เป็นตัวเลข
             if 'Severity' in df_processed.columns:
                 try:
-                    # แปลง Severity เป็นตัวเลข
                     df_processed['Severity'] = pd.to_numeric(df_processed['Severity'], errors='coerce')
-                    # เติมค่าที่หายไปด้วยค่าเฉลี่ย
                     df_processed['Severity'] = df_processed['Severity'].fillna(df_processed['Severity'].mean())
                 except Exception as e:
                     st.error(f"Error converting Severity column: {e}")
@@ -235,45 +233,24 @@ if selected == "User Behavior Analysis":
             }).reset_index()
 
             user_behavior.columns = ['Event User', 'Total Incidents', 'Average Severity', 'First Access', 'Last Access']
-            st.write("Event User Behavior Overview:")
+
+            # เลือก Top 10 Event Users
+            user_behavior = user_behavior.nlargest(10, 'Total Incidents')
+            st.write("Top 10 Event User Behavior Overview:")
             st.dataframe(user_behavior)
 
-            # Visualize User Behavior
+            # Visualize Top 10 User Behavior
             user_incident_fig = px.bar(
                 user_behavior,
                 x='Event User',
                 y='Total Incidents',
                 color='Average Severity',
-                title="User Behavior: Total Incidents and Average Severity"
+                title="Top 10 User Behavior: Total Incidents and Average Severity"
             )
             st.plotly_chart(user_incident_fig)
 
-            # Step 4: วิเคราะห์พฤติกรรมของ Department
-            st.subheader("Step 2: Department Behavior Analysis")
-            if 'Department' in df_processed.columns:
-                department_behavior = df_processed.groupby('Department').agg({
-                    'Incident Type': 'count',
-                    'Severity': 'mean'
-                }).reset_index()
-
-                department_behavior.columns = ['Department', 'Total Incidents', 'Average Severity']
-                st.write("Department Behavior Overview:")
-                st.dataframe(department_behavior)
-
-                # Visualize Department Behavior
-                department_fig = px.bar(
-                    department_behavior,
-                    x='Department',
-                    y='Total Incidents',
-                    color='Average Severity',
-                    title="Department Behavior: Total Incidents and Average Severity"
-                )
-                st.plotly_chart(department_fig)
-            else:
-                st.warning("Column 'Department' not found in the dataset.")
-
-            # Step 5: ตรวจจับความผิดปกติของ User
-            st.subheader("Step 3: Detect Anomalous User Behavior")
+            # Step 4: Anomaly Detection for Event Users
+            st.subheader("Step 2: Detect Anomalous User Behavior")
             from sklearn.ensemble import IsolationForest
             from sklearn.preprocessing import StandardScaler
 
@@ -282,23 +259,71 @@ if selected == "User Behavior Analysis":
             scaler = StandardScaler()
             scaled_data = scaler.fit_transform(anomaly_data)
 
-            # ใช้ Isolation Forest เพื่อตรวจจับความผิดปกติ
+            # ใช้ Isolation Forest
             isolation_forest = IsolationForest(random_state=42)
+            user_behavior['Anomaly Score'] = isolation_forest.decision_function(scaled_data)
             user_behavior['Anomaly'] = isolation_forest.fit_predict(scaled_data)
 
-            # Visualize Anomalies
+            # เลือก Top 10 Anomalous Users
+            anomalies = user_behavior[user_behavior['Anomaly'] == -1].nlargest(10, 'Anomaly Score')
+            st.write("Top 10 Anomalous Users:")
+            st.dataframe(anomalies)
+
+            # Visualize Top 10 Anomalies
             anomaly_fig = px.scatter(
-                user_behavior,
+                anomalies,
                 x='Total Incidents',
                 y='Average Severity',
-                color='Anomaly',
-                title="Anomaly Detection in User Behavior"
+                size='Anomaly Score',
+                color='Anomaly Score',
+                title="Top 10 Anomalous User Behavior"
             )
             st.plotly_chart(anomaly_fig)
 
-        except Exception as e:
-            st.error(f"Error analyzing user and department behavior: {e}")
+            # Step: Behavior Clustering
+st.subheader("Step 4: Behavior Clustering")
+
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
+
+# เตรียมข้อมูลสำหรับ Clustering
+clustering_features = ['Total Incidents', 'Average Severity']  # คุณสามารถเพิ่มฟีเจอร์อื่นได้
+clustering_data = user_behavior[clustering_features]
+
+# Scale ข้อมูล
+scaler = StandardScaler()
+scaled_clustering_data = scaler.fit_transform(clustering_data)
+
+# Apply K-Means Clustering
+kmeans = KMeans(n_clusters=5, random_state=42)  # แบ่งออกเป็น 5 กลุ่ม
+user_behavior['Cluster'] = kmeans.fit_predict(scaled_clustering_data)
+
+# Visualize Clusters
+cluster_fig = px.scatter(
+    user_behavior,
+    x='Total Incidents',
+    y='Average Severity',
+    color='Cluster',
+    title="User Behavior Clustering: 5 Groups",
+    labels={"Cluster": "Cluster Group"}
+)
+st.plotly_chart(cluster_fig)
+
+# อธิบาย Character ของแต่ละกลุ่ม
+st.markdown("### Cluster Characteristics")
+clusters_description = {
+    0: "Clipboard & Cloud Users: Copying data to the clipboard and using cloud applications.",
+    1: "High-Risk Storage & Print: High usage of removable storage or printing data, indicating risk of data being taken outside the organization.",
+    2: "Mixed Activity Users: Engaging in a variety of incident types, such as removable storage, screen capturing, and web access.",
+    3: "File Access & Cloud Users: Accessing files through applications with lower risk but still requiring monitoring.",
+    4: "Screen Capture & Web Users: Focusing on screen capturing and web usage, which may indicate data monitoring concerns."
+}
+
+for cluster, description in clusters_description.items():
+    st.markdown(f"**Cluster {cluster}:** {description}")
+
     else:
         st.warning("No processed file found. Please identify incidents first.")
+
 
 
