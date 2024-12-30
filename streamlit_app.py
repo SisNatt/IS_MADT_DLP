@@ -101,7 +101,7 @@ elif selected == "View Processed Data":
                 )
 
                 # Map Match_Label to True/False based on checkmark
-                df_processed['Match_Label'] = df_processed['Match_Label'].notnull()
+                df_processed['Match_Label'] = df_processed['Match_Label'].apply(lambda x: True if pd.notnull(x) else False)
 
                 # Apply filter
                 if match_label_filter == 'All':
@@ -154,8 +154,6 @@ elif selected == "View Processed Data":
             st.error(f"Error loading processed data: {e}")
     else:
         st.warning("No processed file found. Please identify incidents first.")
-
-
 
 # Page 4: Pattern Mining
 elif selected == "Pattern Mining":
