@@ -125,53 +125,53 @@ import plotly.express as px
 # Title
 st.title("🔍 Pattern Mining for Incidents")
 
-# File upload
-st.sidebar.subheader("Upload Processed File")
-uploaded_file = st.sidebar.file_uploader("Choose a CSV file", type=["csv"])
+elif menu == "Pattern Mining":
+    st.title("Incident Pattern Mining")
+    processed_file = st.session_state.get('processed_file')
 
-if uploaded_file:
-    # Load data
-    df = pd.read_csv(uploaded_file, encoding="utf-8-sig")
-    st.subheader("Uploaded Data")
-    st.dataframe(df)
+    if processed_file and os.path.exists(processed_file):
+        # Load data
+        df_processed = pd.read_csv(processed_file, encoding='utf-8-sig')
 
-    # Check required column
-    if "Incident Type" not in df.columns:
-        st.error("The file must contain the column 'Incident Type'")
-    else:
-        st.subheader("Pattern Mining")
-
-        # Convert 'Incident Type' into dummy variables
-        incident_types = df["Incident Type"].str.get_dummies(sep=",")
+        # Prepare data for Apriori
+        st.subheader("Prepare Data")
+        incident_types = df_processed['Incident Type'].str.get_dummies(sep=',')
         st.write("Dummy-encoded Incident Types:")
         st.dataframe(incident_types)
 
-        # Select minimum support
+        # Apriori Algorithm
+        st.subheader("Frequent Itemsets")
         min_support = st.slider("Select Minimum Support", 0.01, 1.0, 0.05, step=0.01)
         frequent_itemsets = apriori(incident_types, min_support=min_support, use_colnames=True)
-        st.subheader("Frequent Itemsets")
-        st.dataframe(frequent_itemsets)
-
-        # Select minimum confidence
-        min_confidence = st.slider("Select Minimum Confidence", 0.1, 1.0, 0.5, step=0.1)
-        rules = association_rules(frequent_itemsets, metric="confidence", min_threshold=min_confidence)
-        st.subheader("Association Rules")
-        st.dataframe(rules)
-
-        # Visualization
-        if not rules.empty:
-            st.subheader("Visualization of Rules")
-            fig = px.scatter(
-                rules,
-                x="support",
-                y="confidence",
-                size="lift",
-                color="antecedents",
-                title="Support vs Confidence",
-                labels={"antecedents": "Antecedent Patterns"}
-            )
-            st.plotly_chart(fig)
+        
+        if not frequent_itemsets.empty:
+            st.dataframe(frequent_itemsets)
         else:
-            st.warning("No rules found. Try adjusting the support or confidence thresholds.")
-else:
-    st.info("Please upload a processed CSV file.")
+            st.warning("No frequent itemsets found. Try reducing the minimum support value.")
+
+        # Association Rules
+        st.subheader("Association Rules")
+        if not frequent_itemsets.empty:
+            min_confidence = st.slider("Select Minimum Confidence", 0.1, 1.0, 0.5, step=0.1)
+            rules = association_rules(frequent_itemsets, metric="confidence", min_threshold=min_confidence)
+
+            if not rules.empty:
+                st.dataframe(rules)
+                
+                # Visualization
+                st.subheader("Visualization of Rules")
+                fig = px.scatter(
+                    rules,
+                    x="support",
+                    y="confidence",
+                    size="lift",
+                    color="antecedents",
+                    title="Support vs Confidence",
+                    labels={"antecedents": "Antecedent Patterns"}
+                )
+                st.plotly_chart(fig)
+            else:
+                st.warning("No association rules found. Try reducing the minimum confidence value.")
+    else:
+        st.error("No processed file available. Please process incidents first.")
+
