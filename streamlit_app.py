@@ -259,42 +259,38 @@ elif selected == "User Behavior Analysis":
             )
             st.plotly_chart(fig)
 
-            # Cluster Analysis
-            st.subheader("Step 3: Cluster Users Based on Behavior")
-            from sklearn.preprocessing import StandardScaler
+           from sklearn.preprocessing import StandardScaler
             from sklearn.cluster import KMeans
-            from sklearn.decomposition import PCA
+            import plotly.express as px
 
-            # Prepare data for clustering
-            clustering_features = user_behavior[['Total Incidents']]
+            st.subheader("Clustering Users Based on Behavior")
+
+            # Prepare features for clustering
+            features = df_processed.groupby('Event User').agg({
+            'Severity': lambda x: (x == 'Critical').sum(),
+            'Incident Type': 'count'
+            }).reset_index()
+            features.columns = ['Event User', 'Critical Incidents', 'Total Incidents']
+
+            # Standardize features
             scaler = StandardScaler()
-            clustering_data = scaler.fit_transform(clustering_features)
+            scaled_features = scaler.fit_transform(features[['Critical Incidents', 'Total Incidents']])
 
-            # Determine optimal number of clusters
-            num_clusters = st.slider("Select Number of Clusters", 2, 10, 3, step=1)
+            # Perform K-Means Clustering
+            num_clusters = st.slider("Select Number of Clusters", 2, 10, 3)
             kmeans = KMeans(n_clusters=num_clusters, random_state=42)
-            user_behavior['Cluster'] = kmeans.fit_predict(clustering_data)
+            features['Cluster'] = kmeans.fit_predict(scaled_features)
 
             # Visualize clusters
-            st.write(f"Users grouped into {num_clusters} clusters:")
-            pca = PCA(n_components=2)
-            clustering_data_2d = pca.fit_transform(clustering_data)
-            cluster_df = pd.DataFrame(clustering_data_2d, columns=['PC1', 'PC2'])
-            cluster_df['Cluster'] = user_behavior['Cluster']
-            cluster_fig = px.scatter(
-                cluster_df,
-                x='PC1',
-                y='PC2',
-                color='Cluster',
-                title="User Clusters Based on Behavior",
-                labels={'PC1': 'Principal Component 1', 'PC2': 'Principal Component 2'}
+            fig = px.scatter(
+            features,
+            x='Critical Incidents',
+            y='Total Incidents',
+            color='Cluster',
+            title="User Clusters Based on Behavior",
+            labels={'Critical Incidents': 'Number of Critical Incidents', 'Total Incidents': 'Total Incidents'}
             )
-            st.plotly_chart(cluster_fig)
-
-        except Exception as e:
-            st.error(f"Error analyzing user behavior: {e}")
-    else:
-        st.warning("No processed file found. Please identify incidents first.")
+            st.plotly_chart(fig)
 
 
 
