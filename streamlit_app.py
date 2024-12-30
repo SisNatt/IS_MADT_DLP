@@ -3,11 +3,12 @@ from streamlit_option_menu import option_menu
 import pandas as pd
 import os
 from datetime import datetime
+from mlxtend.frequent_patterns import apriori, association_rules
 import plotly.express as px
 
 # File paths
 INCIDENT_FILE = "https://drive.google.com/uc?id=1ueLKSgaNhvPEAjJsqad4iMcDfxsM8Nie"
-DICTIONARY_FILE =  "https://drive.google.com/uc?id=1RF7pbtpx9OjiqKhASwjxmpJfHHP9ulkv"
+DICTIONARY_FILE = "https://drive.google.com/uc?id=1RF7pbtpx9OjiqKhASwjxmpJfHHP9ulkv"
 OUTPUT_DIR = "./output_files"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
@@ -119,9 +120,6 @@ elif selected == "View Processed Data":
     else:
         st.warning("No processed file found. Please identify incidents first.")
 
-from mlxtend.frequent_patterns import apriori, association_rules
-import plotly.express as px
-
 # Page 4: Pattern Mining
 elif selected == "Pattern Mining":
     st.title("🔍 Pattern Mining for Incidents")
@@ -181,4 +179,3 @@ elif selected == "Pattern Mining":
             st.error(f"Error during pattern mining: {e}")
     else:
         st.warning("No processed file found. Please identify incidents first.")
-
