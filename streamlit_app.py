@@ -118,3 +118,60 @@ elif selected == "View Processed Data":
             st.error(f"Error loading processed data: {e}")
     else:
         st.warning("No processed file found. Please identify incidents first.")
+
+from mlxtend.frequent_patterns import apriori, association_rules
+import plotly.express as px
+
+# Title
+st.title("🔍 Pattern Mining for Incidents")
+
+# File upload
+st.sidebar.subheader("Upload Processed File")
+uploaded_file = st.sidebar.file_uploader("Choose a CSV file", type=["csv"])
+
+if uploaded_file:
+    # Load data
+    df = pd.read_csv(uploaded_file, encoding="utf-8-sig")
+    st.subheader("Uploaded Data")
+    st.dataframe(df)
+
+    # Check required column
+    if "Incident Type" not in df.columns:
+        st.error("The file must contain the column 'Incident Type'")
+    else:
+        st.subheader("Pattern Mining")
+
+        # Convert 'Incident Type' into dummy variables
+        incident_types = df["Incident Type"].str.get_dummies(sep=",")
+        st.write("Dummy-encoded Incident Types:")
+        st.dataframe(incident_types)
+
+        # Select minimum support
+        min_support = st.slider("Select Minimum Support", 0.01, 1.0, 0.05, step=0.01)
+        frequent_itemsets = apriori(incident_types, min_support=min_support, use_colnames=True)
+        st.subheader("Frequent Itemsets")
+        st.dataframe(frequent_itemsets)
+
+        # Select minimum confidence
+        min_confidence = st.slider("Select Minimum Confidence", 0.1, 1.0, 0.5, step=0.1)
+        rules = association_rules(frequent_itemsets, metric="confidence", min_threshold=min_confidence)
+        st.subheader("Association Rules")
+        st.dataframe(rules)
+
+        # Visualization
+        if not rules.empty:
+            st.subheader("Visualization of Rules")
+            fig = px.scatter(
+                rules,
+                x="support",
+                y="confidence",
+                size="lift",
+                color="antecedents",
+                title="Support vs Confidence",
+                labels={"antecedents": "Antecedent Patterns"}
+            )
+            st.plotly_chart(fig)
+        else:
+            st.warning("No rules found. Try adjusting the support or confidence thresholds.")
+else:
+    st.info("Please upload a processed CSV file.")
