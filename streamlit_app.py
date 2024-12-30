@@ -194,7 +194,7 @@ elif selected == "Pattern Mining":
     else:
         st.warning("No processed file found. Please identify incidents first.")
 
-# Page 5: User Behavior Analysis
+# Page: User and Department Behavior Analysis
 if selected == "User Behavior Analysis":
     st.title("👤 User and Department Behavior Analysis")
 
@@ -203,22 +203,22 @@ if selected == "User Behavior Analysis":
             processed_file = st.session_state['processed_file']
             df_processed = pd.read_csv(processed_file, encoding='utf-8-sig')
 
-            # Step 1: Aggregate Data by User
-            st.subheader("Step 1: User Behavior")
-            user_behavior = df_processed.groupby('User').agg({
+            # Step 1: Aggregate Data by Event User
+            st.subheader("Step 1: User Behavior Analysis")
+            user_behavior = df_processed.groupby('Event User').agg({
                 'Incident Type': 'count',
                 'Severity': 'mean',
                 'Timestamp': ['min', 'max']
             }).reset_index()
 
-            user_behavior.columns = ['User', 'Total Incidents', 'Average Severity', 'First Access', 'Last Access']
-            st.write("User Behavior Overview:")
+            user_behavior.columns = ['Event User', 'Total Incidents', 'Average Severity', 'First Access', 'Last Access']
+            st.write("Event User Behavior Overview:")
             st.dataframe(user_behavior)
 
             # Visualize User Behavior
             user_incident_fig = px.bar(
                 user_behavior, 
-                x='User', 
+                x='Event User', 
                 y='Total Incidents', 
                 color='Average Severity',
                 title="User Behavior: Total Incidents and Average Severity"
@@ -226,7 +226,7 @@ if selected == "User Behavior Analysis":
             st.plotly_chart(user_incident_fig)
 
             # Step 2: Aggregate Data by Department
-            st.subheader("Step 2: Department Behavior")
+            st.subheader("Step 2: Department Behavior Analysis")
             department_behavior = df_processed.groupby('Department').agg({
                 'Incident Type': 'count',
                 'Severity': 'mean'
@@ -246,34 +246,17 @@ if selected == "User Behavior Analysis":
             )
             st.plotly_chart(department_fig)
 
-            # Step 3: Clustering User Behavior
-            st.subheader("Step 3: Clustering User Behavior")
-            from sklearn.cluster import KMeans
+            # Step 3: Anomaly Detection for Event Users
+            st.subheader("Step 3: Detect Anomalous User Behavior")
+            from sklearn.ensemble import IsolationForest
             from sklearn.preprocessing import StandardScaler
 
-            # Prepare data for clustering
-            clustering_data = user_behavior[['Total Incidents', 'Average Severity']]
+            # Prepare data for anomaly detection
+            anomaly_data = user_behavior[['Total Incidents', 'Average Severity']]
             scaler = StandardScaler()
-            scaled_data = scaler.fit_transform(clustering_data)
+            scaled_data = scaler.fit_transform(anomaly_data)
 
-            # Apply K-Means clustering
-            kmeans = KMeans(n_clusters=3, random_state=42)
-            user_behavior['Cluster'] = kmeans.fit_predict(scaled_data)
-
-            # Visualize Clusters
-            cluster_fig = px.scatter(
-                user_behavior, 
-                x='Total Incidents', 
-                y='Average Severity', 
-                color='Cluster',
-                title="User Clusters: Behavior Analysis"
-            )
-            st.plotly_chart(cluster_fig)
-
-            # Step 4: Anomaly Detection
-            st.subheader("Step 4: Anomaly Detection")
-            from sklearn.ensemble import IsolationForest
-
+            # Apply Isolation Forest
             isolation_forest = IsolationForest(random_state=42)
             user_behavior['Anomaly'] = isolation_forest.fit_predict(scaled_data)
 
@@ -291,3 +274,4 @@ if selected == "User Behavior Analysis":
             st.error(f"Error analyzing user and department behavior: {e}")
     else:
         st.warning("No processed file found. Please identify incidents first.")
+
