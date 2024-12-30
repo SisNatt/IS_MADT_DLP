@@ -6,3 +6,4 @@ matplotlib
 seaborn
 plotly
 streamlit-option-menu
+mlxtend plotly
