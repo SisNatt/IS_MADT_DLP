@@ -77,9 +77,9 @@ if selected == "Home - Raw Data":
     except Exception as e:
         st.error(f"Error loading raw data: {e}")
 
-# Page 3: View Processed Data
+# Page 2: View Processed Data
 elif selected == "View Processed Data":
-    st.title("📊 View Processed Data")
+    st.title("📊 View Processed Data with Match_Label Filter")
 
     if 'processed_file' in st.session_state:
         try:
@@ -100,8 +100,10 @@ elif selected == "View Processed Data":
                     index=0
                 )
 
-                # Map Match_Label to True/False based on checkmark
-                df_processed['Match_Label'] = df_processed['Match_Label'].apply(lambda x: True if pd.notnull(x) else False)
+                # Apply the matching function to ensure Match_Label is valid
+                df_processed['Match_Label'] = df_processed['Match_Label'].apply(
+                    lambda x: True if str(x).strip().lower() == 'true' else False
+                )
 
                 # Apply filter
                 if match_label_filter == 'All':
