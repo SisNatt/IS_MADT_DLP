@@ -348,4 +348,7 @@ if 'Classification' in df_false.columns:
     st.plotly_chart(classification_fig)
 else:
     st.warning("Column 'Classification' not found in the dataset.")
-
+except Exception as e:
+            st.error(f"Error analyzing user behavior: {e}")
+    else:
+        st.warning("No processed file found. Please identify incidents first.")
