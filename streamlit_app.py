@@ -204,62 +204,6 @@ if selected == "User Behavior Analysis":
             processed_file = st.session_state['processed_file']
             df_processed = pd.read_csv(processed_file, encoding='utf-8-sig')
 
-            # Step 1: ตรวจสอบและแปลงคอลัมน์ Severity เป็นตัวเลข
-            if 'Severity' in df_processed.columns:
-                try:
-                    df_processed['Severity'] = pd.to_numeric(df_processed['Severity'], errors='coerce')
-                    df_processed['Severity'] = df_processed['Severity'].fillna(df_processed['Severity'].mean())
-                except Exception as e:
-                    st.error(f"Error converting Severity column: {e}")
-            else:
-                st.error("Column 'Severity' not found in the dataset.")
-                st.stop()
-
-            # Step 2: ตรวจสอบคอลัมน์วันที่และเวลา
-            if 'Occurred (UTC)' in df_processed.columns:
-                date_column = 'Occurred (UTC)'
-            elif 'Time' in df_processed.columns:
-                date_column = 'Time'
-            else:
-                st.error("No valid date or time column found in the dataset.")
-                st.stop()
-
-            # Step 3: วิเคราะห์พฤติกรรมของ Event User
-            st.subheader("Step 1: User Behavior Analysis")
-            user_behavior = df_processed.groupby('Event User').agg({
-                'Incident Type': 'count',
-                'Severity': 'mean',
-                date_column: ['min', 'max']
-            }).reset_index()
-
-            user_behavior.columns = ['Event User', 'Total Incidents', 'Average Severity', 'First Access', 'Last Access']
-
-            # เลือก Top 10 Event Users
-            user_behavior = user_behavior.nlargest(10, 'Total Incidents')
-            st.write("Top 10 Event User Behavior Overview:")
-            st.dataframe(user_behavior)
-
-            # Visualize Top 10 User Behavior
-            user_incident_fig = px.bar(
-                user_behavior,
-                x='Event User',
-                y='Total Incidents',
-                color='Average Severity',
-                title="Top 10 User Behavior: Total Incidents and Average Severity",
-                labels={"Total Incidents": "Number of Incidents", "Average Severity": "Severity"}
-            )
-            st.plotly_chart(user_incident_fig)
-
-        # Page: User Behavior Analysis
-if selected == "User Behavior Analysis":
-    st.title("👤 User Behavior Analysis")
-
-    if 'processed_file' in st.session_state:
-        try:
-            # Load processed data
-            processed_file = st.session_state['processed_file']
-            df_processed = pd.read_csv(processed_file, encoding='utf-8-sig')
-
             # Step 1: ตรวจสอบและแปลงคอลัมน์ Severity เป็นตัวเลข หากจำเป็น
             if 'Severity' in df_processed.columns:
                 try:
@@ -281,15 +225,12 @@ if selected == "User Behavior Analysis":
 
             # Step 3: วิเคราะห์พฤติกรรมของ Event User
             st.subheader("Step 1: User Behavior Analysis")
-
-            # จัดกลุ่มข้อมูลโดย Event User
             user_behavior = df_processed.groupby('Event User').agg({
-                'Incident Type': lambda x: ', '.join(x.astype(str).unique()),  # รวม Incident Type
-                'Severity': lambda x: ', '.join(x.astype(str).unique()),  # รวม Severity
-                date_column: ['min', 'max']  # แสดงช่วงเวลาของเหตุการณ์
+                'Incident Type': lambda x: ', '.join(x.astype(str).unique()),
+                'Severity': lambda x: ', '.join(x.astype(str).unique()),
+                date_column: ['min', 'max']
             }).reset_index()
 
-            # ตั้งชื่อคอลัมน์ใหม่
             user_behavior.columns = ['Event User', 'Incident Types', 'Severities', 'First Access', 'Last Access']
 
             # แสดงข้อมูลในตาราง
@@ -301,8 +242,8 @@ if selected == "User Behavior Analysis":
             severity_fig = px.bar(
                 user_behavior,
                 x='Event User',
-                y='Severities',  # ใช้ Severity แสดง
-                color='Incident Types',  # ใช้ Incident Types เป็นสี
+                y='Severities',
+                color='Incident Types',
                 title="Event User by Severity and Incident Types",
                 labels={"Severities": "Severity Levels", "Incident Types": "Incident Types"}
             )
