@@ -15,8 +15,8 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 # Main Menu
 selected = option_menu(
     "Main Menu", 
-    ["Home - Raw Data", "View Processed Data", "Pattern Mining"], 
-    icons=['house', 'bar-chart', 'diagram-3'], 
+    ["Home - Raw Data", "View Processed Data", "Pattern Mining", "User Behavior Analysis"], 
+    icons=['house', 'bar-chart', 'diagram-3', 'person'], 
     menu_icon="cast", 
     default_index=0
 )
@@ -191,5 +191,103 @@ elif selected == "Pattern Mining":
                     st.warning("No association rules found. Try reducing the minimum confidence value.")
         except Exception as e:
             st.error(f"Error during pattern mining: {e}")
+    else:
+        st.warning("No processed file found. Please identify incidents first.")
+
+# Page 5: User Behavior Analysis
+if selected == "User Behavior Analysis":
+    st.title("👤 User and Department Behavior Analysis")
+
+    if 'processed_file' in st.session_state:
+        try:
+            processed_file = st.session_state['processed_file']
+            df_processed = pd.read_csv(processed_file, encoding='utf-8-sig')
+
+            # Step 1: Aggregate Data by User
+            st.subheader("Step 1: User Behavior")
+            user_behavior = df_processed.groupby('User').agg({
+                'Incident Type': 'count',
+                'Severity': 'mean',
+                'Timestamp': ['min', 'max']
+            }).reset_index()
+
+            user_behavior.columns = ['User', 'Total Incidents', 'Average Severity', 'First Access', 'Last Access']
+            st.write("User Behavior Overview:")
+            st.dataframe(user_behavior)
+
+            # Visualize User Behavior
+            user_incident_fig = px.bar(
+                user_behavior, 
+                x='User', 
+                y='Total Incidents', 
+                color='Average Severity',
+                title="User Behavior: Total Incidents and Average Severity"
+            )
+            st.plotly_chart(user_incident_fig)
+
+            # Step 2: Aggregate Data by Department
+            st.subheader("Step 2: Department Behavior")
+            department_behavior = df_processed.groupby('Department').agg({
+                'Incident Type': 'count',
+                'Severity': 'mean'
+            }).reset_index()
+
+            department_behavior.columns = ['Department', 'Total Incidents', 'Average Severity']
+            st.write("Department Behavior Overview:")
+            st.dataframe(department_behavior)
+
+            # Visualize Department Behavior
+            department_fig = px.bar(
+                department_behavior, 
+                x='Department', 
+                y='Total Incidents', 
+                color='Average Severity',
+                title="Department Behavior: Total Incidents and Average Severity"
+            )
+            st.plotly_chart(department_fig)
+
+            # Step 3: Clustering User Behavior
+            st.subheader("Step 3: Clustering User Behavior")
+            from sklearn.cluster import KMeans
+            from sklearn.preprocessing import StandardScaler
+
+            # Prepare data for clustering
+            clustering_data = user_behavior[['Total Incidents', 'Average Severity']]
+            scaler = StandardScaler()
+            scaled_data = scaler.fit_transform(clustering_data)
+
+            # Apply K-Means clustering
+            kmeans = KMeans(n_clusters=3, random_state=42)
+            user_behavior['Cluster'] = kmeans.fit_predict(scaled_data)
+
+            # Visualize Clusters
+            cluster_fig = px.scatter(
+                user_behavior, 
+                x='Total Incidents', 
+                y='Average Severity', 
+                color='Cluster',
+                title="User Clusters: Behavior Analysis"
+            )
+            st.plotly_chart(cluster_fig)
+
+            # Step 4: Anomaly Detection
+            st.subheader("Step 4: Anomaly Detection")
+            from sklearn.ensemble import IsolationForest
+
+            isolation_forest = IsolationForest(random_state=42)
+            user_behavior['Anomaly'] = isolation_forest.fit_predict(scaled_data)
+
+            # Visualize Anomalies
+            anomaly_fig = px.scatter(
+                user_behavior, 
+                x='Total Incidents', 
+                y='Average Severity',
+                color='Anomaly', 
+                title="Anomaly Detection in User Behavior"
+            )
+            st.plotly_chart(anomaly_fig)
+
+        except Exception as e:
+            st.error(f"Error analyzing user and department behavior: {e}")
     else:
         st.warning("No processed file found. Please identify incidents first.")
