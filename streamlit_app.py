@@ -266,24 +266,6 @@ elif selected == "User Behavior Analysis":
                 with st.expander("View Exploded Data", expanded=True):
                     st.dataframe(exploded_df)
 
-                # Summarize data
-                st.subheader("Summary: Classification and Severity Distribution")
-                classification_summary = exploded_df.groupby(['Classification', 'Severity']).size().reset_index(name='Count')
-
-                # Display summary data
-                st.write("Summary of Classification and Severity Distribution:")
-                st.dataframe(classification_summary)
-
-                # Display numerical summary
-                st.subheader("Numerical Summary:")
-                for classification in classification_summary['Classification'].unique():
-                    st.write(f"**Classification: {classification}**")
-                    severity_data = classification_summary[classification_summary['Classification'] == classification]
-                    for _, row in severity_data.iterrows():
-                        severity = row['Severity']
-                        count = row['Count']
-                        st.write(f"- Severity '{severity}': {count} cases")
-                    st.write("---")  # Separator between classifications
             else:
                 st.warning("Columns 'Classification' or 'Rule Set' not found in the dataset.")
 
