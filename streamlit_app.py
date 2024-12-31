@@ -282,7 +282,7 @@ elif selected == "User Behavior Analysis":
             with st.expander("View False Data"):
                 st.dataframe(df_false)
 
-            # Analyze Relationship between Classification and Rule Set (Split and Explode)
+            # Split and Explode Classification and Rule Set
             if 'Classification' in df_false.columns and 'Rule Set' in df_false.columns:
                 st.subheader("Detailed Analysis: Classification and Rule Set")
 
@@ -303,7 +303,7 @@ elif selected == "User Behavior Analysis":
                 # Display detailed exploded data
                 st.write(f"Exploded data: {len(exploded_df)} rows")
                 with st.expander("View Exploded Data"):
-                st.dataframe(exploded_df)
+                    st.dataframe(exploded_df)
 
                 # Analyze frequency of Classification and Rule Set
                 classification_rule_count = exploded_df.groupby(['Classification', 'Rule Set']).size().reset_index(name='Count')
@@ -323,10 +323,11 @@ elif selected == "User Behavior Analysis":
                     labels={'Count': 'Number of Cases'},
                     barmode='group'
                 )
-            st.plotly_chart(bar_fig)
-        else:
-            st.warning("Columns 'Classification' or 'Rule Set' not found in the dataset.")
-    except Exception as e:
-        st.error(f"Error analyzing user behavior: {e}")ฅ
-else:
-    st.warning("No processed file found. Please identify incidents first.")
+                st.plotly_chart(bar_fig)
+            else:
+                st.warning("Columns 'Classification' or 'Rule Set' not found in the dataset.")
+
+        except Exception as e:
+            st.error(f"Error analyzing user behavior: {e}")
+    else:
+        st.warning("No processed file found. Please identify incidents first.")
