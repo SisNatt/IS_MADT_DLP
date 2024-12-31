@@ -215,6 +215,62 @@ elif selected == "Pattern Mining":
     else:
         st.warning("No processed file found. Please identify incidents first.")
 
+# Analyze Relationship between Classification and Rule
+if 'Classification' in df_false.columns and 'Rule Set' in df_false.columns:
+    st.subheader("Relationship between Classification and Rule Set")
+    
+    # Cross-tabulation of Classification and Rule Set
+    classification_rule_ct = pd.crosstab(df_false['Classification'], df_false['Rule Set'])
+    
+    # Display the crosstab
+    st.write("Cross-tabulation of Classification and Rule Set:")
+    st.dataframe(classification_rule_ct)
+
+    # Convert crosstab to DataFrame for visualization
+    classification_rule_df = classification_rule_ct.stack().reset_index()
+    classification_rule_df.columns = ['Classification', 'Rule Set', 'Count']
+    
+    # Filter to show only significant relationships
+    significant_relationships = classification_rule_df[classification_rule_df['Count'] > 0]
+
+    # Bar Chart for Classification and Rule Set
+    st.subheader("Bar Chart of Classification and Rule Set Relationships")
+    bar_fig = px.bar(
+        significant_relationships,
+        x='Classification',
+        y='Count',
+        color='Rule Set',
+        title="Classification and Rule Set Relationships",
+        labels={'Count': 'Number of Cases'},
+        barmode='group'
+    )
+    st.plotly_chart(bar_fig)
+
+    # Heatmap for Classification and Rule Set
+    st.subheader("Heatmap of Classification and Rule Set")
+    heatmap_fig = px.density_heatmap(
+        significant_relationships,
+        x='Classification',
+        y='Rule Set',
+        z='Count',
+        color_continuous_scale='Viridis',
+        title="Heatmap of Classification and Rule Set"
+    )
+    st.plotly_chart(heatmap_fig)
+    
+    # Treemap for Classification and Rule Set
+    st.subheader("Treemap of Classification and Rule Set")
+    treemap_fig = px.treemap(
+        significant_relationships,
+        path=['Classification', 'Rule Set'],
+        values='Count',
+        title="Treemap of Classification and Rule Set Relationships"
+    )
+    st.plotly_chart(treemap_fig)
+else:
+    st.warning("Columns 'Classification' or 'Rule Set' not found in the dataset.")
+
+
 # Page 5: User Behavior Analysis
 elif selected == "User Behavior Analysis":
     st.title("📈 User Behavior Analysis")
