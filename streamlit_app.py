@@ -314,45 +314,44 @@ elif selected == "User Behavior Analysis":
             silhouette_scores = []
             cluster_range = range(2, 11)
 
-            for k in cluster_range:
+        for k in cluster_range:
             kmeans = KMeans(n_clusters=k, random_state=42)
             kmeans.fit(scaled_features)
             silhouette_scores.append(silhouette_score(scaled_features, kmeans.labels_))
 
-            optimal_k = cluster_range[np.argmax(silhouette_scores)]
+         optimal_k = cluster_range[np.argmax(silhouette_scores)]
             st.write(f"Optimal number of clusters: {optimal_k}")
 
-            # Plot Silhouette Scores
-            silhouette_fig = px.line(
+        # Plot Silhouette Scores
+         silhouette_fig = px.line(
             x=list(cluster_range),
             y=silhouette_scores,
             title="Silhouette Scores for Different Number of Clusters",
             labels={'x': 'Number of Clusters', 'y': 'Silhouette Score'}
-            )
-            st.plotly_chart(silhouette_fig)
+        )
+        st.plotly_chart(silhouette_fig)
 
-            # Step 3: Perform K-Means Clustering
-            kmeans = KMeans(n_clusters=optimal_k, random_state=42)
-            cluster_data['Cluster Label'] = kmeans.fit_predict(scaled_features)
+        # Step 3: Perform K-Means Clustering
+         kmeans = KMeans(n_clusters=optimal_k, random_state=42)
+        cluster_data['Cluster Label'] = kmeans.fit_predict(scaled_features)
 
-            # Step 4: Add Cluster Labels Back to Original Data
-            df_processed = df_processed.merge(cluster_data[['Event User', 'Cluster Label']], on='Event User', how='left')
+        # Step 4: Add Cluster Labels Back to Original Data
+        df_processed = df_processed.merge(cluster_data[['Event User', 'Cluster Label']], on='Event User', how='left')
 
-            # Display Updated DataFrame
-            st.subheader("Updated DataFrame with Improved Clustering")
-            st.dataframe(df_processed)
+        # Display Updated DataFrame
+        st.subheader("Updated DataFrame with Improved Clustering")
+        st.dataframe(df_processed)
 
-            # Step 5: Summarize Clusters
-            st.subheader("Cluster Summary")
-            cluster_summary = df_processed.groupby('Cluster Label').agg({
+        # Step 5: Summarize Clusters
+        st.subheader("Cluster Summary")
+        cluster_summary = df_processed.groupby('Cluster Label').agg({
             'Event User': 'nunique',
             'Incident Type': lambda x: x.nunique(),
             'Severity': lambda x: x.mode().iloc[0] if not x.mode().empty else None,
             'Occurred (UTC)': 'count'
-            }).reset_index()
-            cluster_summary.columns = ['Cluster Label', 'Unique Users', 'Unique Incident Types', 'Most Common Severity', 'Total Incidents']
-            st.dataframe(cluster_summary)
-
+        }).reset_index()
+        cluster_summary.columns = ['Cluster Label', 'Unique Users', 'Unique Incident Types', 'Most Common Severity', 'Total Incidents']
+        st.dataframe(cluster_summary)
 
         except Exception as e:
             st.error(f"Error analyzing user behavior: {e}")
