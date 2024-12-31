@@ -255,7 +255,7 @@ elif selected == "User Behavior Analysis":
             scaled_features = scaler.fit_transform(cluster_data[['Incident Count', 'Unique Incident Types', 'Severity Numeric']])
 
             # Perform K-Means Clustering
-            kmeans = KMeans(n_clusters=3, random_state=42)
+            kmeans = KMeans(n_clusters=5, random_state=42)
             cluster_data['Cluster Label'] = kmeans.fit_predict(scaled_features)
 
             # Add Cluster Labels Back to Original Data
