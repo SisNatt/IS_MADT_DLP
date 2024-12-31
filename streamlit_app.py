@@ -282,62 +282,53 @@ elif selected == "User Behavior Analysis":
             with st.expander("View False Data"):
                 st.dataframe(df_false)
 
-            # Analyze Relationship between Classification and Rule Set
+            # Analyze Relationship between Classification and Rule Set (Split and Explode)
             if 'Classification' in df_false.columns and 'Rule Set' in df_false.columns:
-                st.subheader("Relationship between Classification and Rule Set")
+            st.subheader("Detailed Analysis: Classification and Rule Set")
 
-                # Cross-tabulation of Classification and Rule Set
-                classification_rule_ct = pd.crosstab(df_false['Classification'], df_false['Rule Set'])
+            # Split Classification and Rule Set into lists
+            df_false['Classification_List'] = df_false['Classification'].str.split(',')
+            df_false['Rule_Set_List'] = df_false['Rule Set'].str.split(',')
 
-                # Display the crosstab
-                st.write("Cross-tabulation of Classification and Rule Set:")
-                st.dataframe(classification_rule_ct)
+            # Explode to create individual rows for each Classification and Rule Set
+            exploded_df = df_false.explode('Classification_List').explode('Rule_Set_List')
 
-                # Convert crosstab to DataFrame for visualization
-                classification_rule_df = classification_rule_ct.stack().reset_index()
-                classification_rule_df.columns = ['Classification', 'Rule Set', 'Count']
+            # Clean up and rename columns
+            exploded_df = exploded_df[['Incident ID', 'Classification_List', 'Rule_Set_List']]
+            exploded_df.columns = ['Incident ID', 'Classification', 'Rule Set']
 
-                # Filter to show only significant relationships
-                significant_relationships = classification_rule_df[classification_rule_df['Count'] > 0]
+            # Drop duplicate combinations of Classification and Rule Set
+            exploded_df = exploded_df.drop_duplicates()
 
-                # Bar Chart for Classification and Rule Set
-                st.subheader("Bar Chart of Classification and Rule Set Relationships")
-                bar_fig = px.bar(
-                    significant_relationships,
-                    x='Classification',
-                    y='Count',
-                    color='Rule Set',
-                    title="Classification and Rule Set Relationships",
-                    labels={'Count': 'Number of Cases'},
-                    barmode='group'
-                )
-                st.plotly_chart(bar_fig)
+            # Display detailed exploded data
+            st.write(f"Exploded data: {len(exploded_df)} rows")
+            with st.expander("View Exploded Data"):
+            st.dataframe(exploded_df)
 
-                # Heatmap for Classification and Rule Set
-                st.subheader("Heatmap of Classification and Rule Set")
-                heatmap_fig = px.density_heatmap(
-                    significant_relationships,
-                    x='Classification',
-                    y='Rule Set',
-                    z='Count',
-                    color_continuous_scale='Viridis',
-                    title="Heatmap of Classification and Rule Set"
-                )
-                st.plotly_chart(heatmap_fig)
+            # Analyze frequency of Classification and Rule Set
+            classification_rule_count = exploded_df.groupby(['Classification', 'Rule Set']).size().reset_index(name='Count')
 
-                # Treemap for Classification and Rule Set
-                st.subheader("Treemap of Classification and Rule Set")
-                treemap_fig = px.treemap(
-                    significant_relationships,
-                    path=['Classification', 'Rule Set'],
-                    values='Count',
-                    title="Treemap of Classification and Rule Set Relationships"
-                )
-                st.plotly_chart(treemap_fig)
-            else:
-                st.warning("Columns 'Classification' or 'Rule Set' not found in the dataset.")
+            # Display aggregated data
+            st.write("Aggregated Data: Frequency of Classification and Rule Set")
+            st.dataframe(classification_rule_count)
 
-        except Exception as e:
-            st.error(f"Error analyzing user behavior: {e}")
-    else:
-        st.warning("No processed file found. Please identify incidents first.")
+            # Bar Chart for Aggregated Data
+            st.subheader("Bar Chart: Classification and Rule Set Frequency")
+            bar_fig = px.bar(
+            classification_rule_count,
+            x='Classification',
+            y='Count',
+            color='Rule Set',
+            title="Classification and Rule Set Frequency",
+            labels={'Count': 'Number of Cases'},
+            barmode='group'
+            )
+            st.plotly_chart(bar_fig)
+        else:
+            st.warning("Columns 'Classification' or 'Rule Set' not found in the dataset.")
+
+
+    except Exception as e:
+        st.error(f"Error analyzing user behavior: {e}")ฅ
+else:
+    st.warning("No processed file found. Please identify incidents first.")
