@@ -274,19 +274,6 @@ elif selected == "User Behavior Analysis":
                 st.write("Summary of Classification and Severity Distribution:")
                 st.dataframe(classification_summary)
 
-                # Display numerical summary
-                st.subheader("Numerical Summary:")
-                for classification in classification_summary['Classification'].unique():
-                    st.write(f"**Classification: {classification}**")
-                    severity_data = classification_summary[classification_summary['Classification'] == classification]
-                    for _, row in severity_data.iterrows():
-                        severity = row['Severity']
-                        count = row['Count']
-                        st.write(f"- Severity '{severity}': {count} cases")
-                    st.write("---")  # Separator between classifications
-            else:
-                st.warning("Columns 'Classification' or 'Rule Set' not found in the dataset.")
-
             # Step 1: Prepare Data
             st.subheader("Improved Cluster Analysis")
             cluster_data = df_processed[['Event User', 'Incident Type', 'Severity', 'Occurred (UTC)']].copy()
