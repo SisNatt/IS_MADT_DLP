@@ -215,7 +215,6 @@ elif selected == "Pattern Mining":
     else:
         st.warning("No processed file found. Please identify incidents first.")
 
-
 # Page 5: User Behavior Analysis
 elif selected == "User Behavior Analysis":
     st.title("📈 User Behavior Analysis")
@@ -233,47 +232,63 @@ elif selected == "User Behavior Analysis":
                 st.error(f"Missing required columns: {', '.join(missing_columns)}")
                 st.stop()
 
-            # Convert Severity to Numeric
-            severity_mapping = {'Low': 1, 'Medium': 2, 'High': 3, 'Critical': 4}
-            df_processed['Severity_Numeric'] = df_processed['Severity'].map(severity_mapping).fillna(0)
+            # Step 3: Focus on Match_Label = False
+            st.subheader("Step 3: Focus on Match_Label = False")
+            df_processed['Match_Label'] = df_processed['Match_Label'].apply(
+                lambda x: True if str(x).strip().lower() == 'true' else False
+            )
+            df_false = df_processed[df_processed['Match_Label'] == False]
+            st.write(f"Total False records: {len(df_false)}")
 
-            # One-Hot Encode Incident Type and Event User
-            incident_type_encoded = df_processed['Incident Type'].str.get_dummies(sep=',')
-            event_user_encoded = df_processed['Event User'].str.get_dummies()
+            # Display False data
+            with st.expander("View False Data", expanded=True):
+                st.dataframe(df_false)
 
-            # Combine Encoded Features with Original Data
-            combined_features = pd.concat([df_processed, incident_type_encoded, event_user_encoded], axis=1)
+            # Split and Explode Classification and Rule Set
+            if 'Classification' in df_false.columns and 'Rule Set' in df_false.columns:
+                st.subheader("Detailed Analysis: Classification and Rule Set")
 
-            # Standardize the features
-            from sklearn.preprocessing import StandardScaler
-            scaler = StandardScaler()
-            feature_columns = incident_type_encoded.columns.tolist() + event_user_encoded.columns.tolist() + ['Severity_Numeric']
-            scaled_features = scaler.fit_transform(combined_features[feature_columns])
+                # Split Classification and Rule Set into lists
+                df_false['Classification_List'] = df_false['Classification'].str.split(',')
+                df_false['Rule_Set_List'] = df_false['Rule Set'].str.split(',')
 
-            # Perform K-Means Clustering
-            from sklearn.cluster import KMeans
-            kmeans = KMeans(n_clusters=3, random_state=42)  # Adjust number of clusters as needed
-            combined_features['Cluster_Label'] = kmeans.fit_predict(scaled_features)
+                # Explode to create individual rows for each Classification and Rule Set
+                exploded_df = df_false.explode('Classification_List').explode('Rule_Set_List')
 
-            # Add Cluster Labels Back to Original DataFrame
-            df_processed['Cluster_Label'] = combined_features['Cluster_Label']
+                # Remove Incident ID from display
+                exploded_df = exploded_df[['Classification_List', 'Rule_Set_List', 'Severity']]
+                exploded_df.columns = ['Classification', 'Rule Set', 'Severity']
 
-            # Display Updated DataFrame
-            st.subheader("Updated DataFrame with Clustering")
-            st.dataframe(df_processed)
+                # Drop duplicate combinations
+                exploded_df = exploded_df.drop_duplicates()
 
-            # Summary of Clusters
-            st.subheader("Cluster Summary")
-            cluster_summary = df_processed.groupby('Cluster_Label').agg({
-                'Severity': lambda x: x.mode().iloc[0] if not x.mode().empty else None,
-                'Event User': 'nunique',
-                'Incident Type': lambda x: x.nunique(),
-                'Occurred (UTC)': 'count'
-            }).reset_index()
-            cluster_summary.columns = ['Cluster Label', 'Most Common Severity', 'Unique Users', 'Unique Incident Types', 'Total Incidents']
-            st.dataframe(cluster_summary)
+                # Display detailed exploded data (expanded by default)
+                with st.expander("View Exploded Data", expanded=True):
+                    st.dataframe(exploded_df)
+
+                # Summarize data
+                st.subheader("Summary: Classification and Severity Distribution")
+                classification_summary = exploded_df.groupby(['Classification', 'Severity']).size().reset_index(name='Count')
+
+                # Display summary data
+                st.write("Summary of Classification and Severity Distribution:")
+                st.dataframe(classification_summary)
+
+                # Display numerical summary
+                st.subheader("Numerical Summary:")
+                for classification in classification_summary['Classification'].unique():
+                    st.write(f"**Classification: {classification}**")
+                    severity_data = classification_summary[classification_summary['Classification'] == classification]
+                    for _, row in severity_data.iterrows():
+                        severity = row['Severity']
+                        count = row['Count']
+                        st.write(f"- Severity '{severity}': {count} cases")
+                    st.write("---")  # Separator between classifications
+            else:
+                st.warning("Columns 'Classification' or 'Rule Set' not found in the dataset.")
 
         except Exception as e:
             st.error(f"Error analyzing user behavior: {e}")
     else:
         st.warning("No processed file found. Please identify incidents first.")
+
