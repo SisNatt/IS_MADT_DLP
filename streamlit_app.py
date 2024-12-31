@@ -233,43 +233,6 @@ elif selected == "User Behavior Analysis":
                 st.error(f"Missing required columns: {', '.join(missing_columns)}")
                 st.stop()
 
-            # Step 1: User Behavior Profile
-            st.subheader("Step 1: User Behavior Profile")
-            user_behavior = df_processed.groupby('Event User').agg({
-                'Incident Type': lambda x: x.mode().iloc[0] if not x.mode().empty else None,
-                'Severity': lambda x: x.mode().iloc[0] if not x.mode().empty else None,
-                'Destination': lambda x: x.mode().iloc[0] if not x.mode().empty else None,
-                'Occurred (UTC)': 'count'
-            }).reset_index()
-            user_behavior.columns = ['Event User', 'Most Frequent Incident Type', 'Most Frequent Severity',
-                                     'Most Frequent Destination', 'Total Incidents']
-            st.dataframe(user_behavior)
-
-            # Step 2: Timeline of Top 5 Users
-            st.subheader("Step 2: Timeline of Top 5 Users' Incidents (Last Month)")
-            df_processed['Occurred (UTC)'] = pd.to_datetime(df_processed['Occurred (UTC)'])
-            last_month = datetime.now() - pd.DateOffset(months=1)
-            filtered_data = df_processed[df_processed['Occurred (UTC)'] >= last_month]
-            incident_user_count = filtered_data['Event User'].value_counts().reset_index()
-            incident_user_count.columns = ['Event User', 'Total Incidents']
-            top_users = incident_user_count.head(5)['Event User'].tolist()
-            filtered_data_top_users = filtered_data[filtered_data['Event User'].isin(top_users)]
-            timeline_data = filtered_data_top_users.groupby(
-                [filtered_data_top_users['Occurred (UTC)'].dt.date, 'Event User']
-            ).size().reset_index(name='Incident Count')
-
-            # Plot timeline
-            fig = px.line(
-                timeline_data,
-                x='Occurred (UTC)',
-                y='Incident Count',
-                color='Event User',
-                title="Timeline of Incidents for Top 5 Users (Last Month)",
-                labels={'Occurred (UTC)': 'Date', 'Incident Count': 'Number of Incidents'},
-                markers=True
-            )
-            st.plotly_chart(fig)
-
             # Step 3: Focus on Match_Label = False
             st.subheader("Step 3: Focus on Match_Label = False")
             df_processed['Match_Label'] = df_processed['Match_Label'].apply(
@@ -279,7 +242,7 @@ elif selected == "User Behavior Analysis":
             st.write(f"Total False records: {len(df_false)}")
 
             # Display False data
-            with st.expander("View False Data"):
+            with st.expander("View False Data", expanded=True):
                 st.dataframe(df_false)
 
             # Split and Explode Classification and Rule Set
@@ -293,37 +256,25 @@ elif selected == "User Behavior Analysis":
                 # Explode to create individual rows for each Classification and Rule Set
                 exploded_df = df_false.explode('Classification_List').explode('Rule_Set_List')
 
-                # Clean up and rename columns
-                exploded_df = exploded_df[['Incident ID', 'Classification_List', 'Rule_Set_List']]
-                exploded_df.columns = ['Incident ID', 'Classification', 'Rule Set']
+                # Remove Incident ID from display
+                exploded_df = exploded_df[['Classification_List', 'Rule_Set_List', 'Severity']]
+                exploded_df.columns = ['Classification', 'Rule Set', 'Severity']
 
-                # Drop duplicate combinations of Classification and Rule Set
+                # Drop duplicate combinations
                 exploded_df = exploded_df.drop_duplicates()
 
-                # Display detailed exploded data
-                st.write(f"Exploded data: {len(exploded_df)} rows")
-                with st.expander("View Exploded Data"):
+                # Display detailed exploded data (expanded by default)
+                with st.expander("View Exploded Data", expanded=True):
                     st.dataframe(exploded_df)
 
-                # Analyze frequency of Classification and Rule Set
-                classification_rule_count = exploded_df.groupby(['Classification', 'Rule Set']).size().reset_index(name='Count')
+                # Summarize data
+                st.subheader("Summary: Classification and Severity Distribution")
+                classification_summary = exploded_df.groupby(['Classification', 'Severity']).size().reset_index(name='Count')
 
-                # Display aggregated data
-                st.write("Aggregated Data: Frequency of Classification and Rule Set")
-                st.dataframe(classification_rule_count)
+                # Display summary data
+                st.write("Summary of Classification and Severity Distribution:")
+                st.dataframe(classification_summary)
 
-                # Bar Chart for Aggregated Data
-                st.subheader("Bar Chart: Classification and Rule Set Frequency")
-                bar_fig = px.bar(
-                    classification_rule_count,
-                    x='Classification',
-                    y='Count',
-                    color='Rule Set',
-                    title="Classification and Rule Set Frequency",
-                    labels={'Count': 'Number of Cases'},
-                    barmode='group'
-                )
-                st.plotly_chart(bar_fig)
             else:
                 st.warning("Columns 'Classification' or 'Rule Set' not found in the dataset.")
 
