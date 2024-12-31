@@ -287,19 +287,13 @@ elif selected == "User Behavior Analysis":
             else:
                 st.warning("Columns 'Classification' or 'Rule Set' not found in the dataset.")
 
-
             # Step 1: Prepare Data
             st.subheader("Improved Cluster Analysis")
             cluster_data = df_processed[['Event User', 'Incident Type', 'Severity', 'Occurred (UTC)']].copy()
 
             # Create new features
-            # 1. Count of incidents per user
             cluster_data['Incident Count'] = cluster_data.groupby('Event User')['Event User'].transform('count')
-
-            # 2. Count of unique incident types per user
             cluster_data['Unique Incident Types'] = cluster_data.groupby('Event User')['Incident Type'].transform('nunique')
-
-            # 3. Map severity to numeric
             severity_mapping = {'Low': 1, 'Medium': 2, 'High': 3, 'Critical': 4}
             cluster_data['Severity Numeric'] = cluster_data['Severity'].map(severity_mapping).fillna(0)
 
@@ -314,47 +308,48 @@ elif selected == "User Behavior Analysis":
             silhouette_scores = []
             cluster_range = range(2, 11)
 
-        for k in cluster_range:
-            kmeans = KMeans(n_clusters=k, random_state=42)
-            kmeans.fit(scaled_features)
-            silhouette_scores.append(silhouette_score(scaled_features, kmeans.labels_))
+            for k in cluster_range:
+                kmeans = KMeans(n_clusters=k, random_state=42)
+                kmeans.fit(scaled_features)
+                silhouette_scores.append(silhouette_score(scaled_features, kmeans.labels_))
 
-         optimal_k = cluster_range[np.argmax(silhouette_scores)]
+            optimal_k = cluster_range[np.argmax(silhouette_scores)]
             st.write(f"Optimal number of clusters: {optimal_k}")
 
-        # Plot Silhouette Scores
-         silhouette_fig = px.line(
-            x=list(cluster_range),
-            y=silhouette_scores,
-            title="Silhouette Scores for Different Number of Clusters",
-            labels={'x': 'Number of Clusters', 'y': 'Silhouette Score'}
-        )
-        st.plotly_chart(silhouette_fig)
+            # Plot Silhouette Scores
+            silhouette_fig = px.line(
+                x=list(cluster_range),
+                y=silhouette_scores,
+                title="Silhouette Scores for Different Number of Clusters",
+                labels={'x': 'Number of Clusters', 'y': 'Silhouette Score'}
+            )
+            st.plotly_chart(silhouette_fig)
 
-        # Step 3: Perform K-Means Clustering
-         kmeans = KMeans(n_clusters=optimal_k, random_state=42)
-        cluster_data['Cluster Label'] = kmeans.fit_predict(scaled_features)
+            # Step 3: Perform K-Means Clustering
+            kmeans = KMeans(n_clusters=optimal_k, random_state=42)
+            cluster_data['Cluster Label'] = kmeans.fit_predict(scaled_features)
 
-        # Step 4: Add Cluster Labels Back to Original Data
-        df_processed = df_processed.merge(cluster_data[['Event User', 'Cluster Label']], on='Event User', how='left')
+            # Step 4: Add Cluster Labels Back to Original Data
+            df_processed = df_processed.merge(cluster_data[['Event User', 'Cluster Label']], on='Event User', how='left')
 
-        # Display Updated DataFrame
-        st.subheader("Updated DataFrame with Improved Clustering")
-        st.dataframe(df_processed)
+            # Display Updated DataFrame
+            st.subheader("Updated DataFrame with Improved Clustering")
+            st.dataframe(df_processed)
 
-        # Step 5: Summarize Clusters
-        st.subheader("Cluster Summary")
-        cluster_summary = df_processed.groupby('Cluster Label').agg({
-            'Event User': 'nunique',
-            'Incident Type': lambda x: x.nunique(),
-            'Severity': lambda x: x.mode().iloc[0] if not x.mode().empty else None,
-            'Occurred (UTC)': 'count'
-        }).reset_index()
-        cluster_summary.columns = ['Cluster Label', 'Unique Users', 'Unique Incident Types', 'Most Common Severity', 'Total Incidents']
-        st.dataframe(cluster_summary)
+            # Step 5: Summarize Clusters
+            st.subheader("Cluster Summary")
+            cluster_summary = df_processed.groupby('Cluster Label').agg({
+                'Event User': 'nunique',
+                'Incident Type': lambda x: x.nunique(),
+                'Severity': lambda x: x.mode().iloc[0] if not x.mode().empty else None,
+                'Occurred (UTC)': 'count'
+            }).reset_index()
+            cluster_summary.columns = ['Cluster Label', 'Unique Users', 'Unique Incident Types', 'Most Common Severity', 'Total Incidents']
+            st.dataframe(cluster_summary)
 
         except Exception as e:
             st.error(f"Error analyzing user behavior: {e}")
     else:
         st.warning("No processed file found. Please identify incidents first.")
+
 
