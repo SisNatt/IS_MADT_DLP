@@ -226,56 +226,14 @@ elif selected == "User Behavior Analysis":
             df_processed = pd.read_csv(processed_file, encoding='utf-8-sig')
 
             # Check for necessary columns
-            required_columns = ['Event User', 'Incident Type', 'Severity', 'Occurred (UTC)', 'Destination', 'Match_Label', 'Classification', 'Rule Set']
+            required_columns = ['Event User', 'Incident Type', 'Severity', 'Occurred (UTC)', 'Match_Label', 'Classification', 'Rule Set']
             missing_columns = [col for col in required_columns if col not in df_processed.columns]
             if missing_columns:
                 st.error(f"Missing required columns: {', '.join(missing_columns)}")
                 st.stop()
 
-            # Step 3: Focus on Match_Label = False
-            st.subheader("Step 3: Focus on Match_Label = False")
-            df_processed['Match_Label'] = df_processed['Match_Label'].apply(
-                lambda x: True if str(x).strip().lower() == 'true' else False
-            )
-            df_false = df_processed[df_processed['Match_Label'] == False]
-            st.write(f"Total False records: {len(df_false)}")
-
-            # Display False data
-            with st.expander("View False Data", expanded=True):
-                st.dataframe(df_false)
-
-            # Split and Explode Classification and Rule Set
-            if 'Classification' in df_false.columns and 'Rule Set' in df_false.columns:
-                st.subheader("Detailed Analysis: Classification and Rule Set")
-
-                # Split Classification and Rule Set into lists
-                df_false['Classification_List'] = df_false['Classification'].str.split(',')
-                df_false['Rule_Set_List'] = df_false['Rule Set'].str.split(',')
-
-                # Explode to create individual rows for each Classification and Rule Set
-                exploded_df = df_false.explode('Classification_List').explode('Rule_Set_List')
-
-                # Remove Incident ID from display
-                exploded_df = exploded_df[['Classification_List', 'Rule_Set_List', 'Severity']]
-                exploded_df.columns = ['Classification', 'Rule Set', 'Severity']
-
-                # Drop duplicate combinations
-                exploded_df = exploded_df.drop_duplicates()
-
-                # Display detailed exploded data (expanded by default)
-                with st.expander("View Exploded Data", expanded=True):
-                    st.dataframe(exploded_df)
-
-                # Summarize data
-                st.subheader("Summary: Classification and Severity Distribution")
-                classification_summary = exploded_df.groupby(['Classification', 'Severity']).size().reset_index(name='Count')
-
-                # Display summary data
-                st.write("Summary of Classification and Severity Distribution:")
-                st.dataframe(classification_summary)
-
-            # Step 1: Prepare Data
-            st.subheader("Improved Cluster Analysis")
+            # Step 1: Prepare Data for Clustering
+            st.subheader("Clustering Incident Data")
             cluster_data = df_processed[['Event User', 'Incident Type', 'Severity', 'Occurred (UTC)']].copy()
 
             # Create new features
@@ -291,52 +249,44 @@ elif selected == "User Behavior Analysis":
             scaler = StandardScaler()
             scaled_features = scaler.fit_transform(cluster_data[['Incident Count', 'Unique Incident Types', 'Severity Numeric']])
 
-            # Step 2: Find Optimal Number of Clusters
-            silhouette_scores = []
-            cluster_range = range(2, 11)
-
-            for k in cluster_range:
-                kmeans = KMeans(n_clusters=k, random_state=42)
-                kmeans.fit(scaled_features)
-                silhouette_scores.append(silhouette_score(scaled_features, kmeans.labels_))
-
-            optimal_k = cluster_range[np.argmax(silhouette_scores)]
-            st.write(f"Optimal number of clusters: {optimal_k}")
-
-            # Plot Silhouette Scores
-            silhouette_fig = px.line(
-                x=list(cluster_range),
-                y=silhouette_scores,
-                title="Silhouette Scores for Different Number of Clusters",
-                labels={'x': 'Number of Clusters', 'y': 'Silhouette Score'}
-            )
-            st.plotly_chart(silhouette_fig)
-
-            # Step 3: Perform K-Means Clustering
-            kmeans = KMeans(n_clusters=optimal_k, random_state=42)
+            # Perform K-Means Clustering
+            kmeans = KMeans(n_clusters=3, random_state=42)
             cluster_data['Cluster Label'] = kmeans.fit_predict(scaled_features)
 
-            # Step 4: Add Cluster Labels Back to Original Data
+            # Add Cluster Labels Back to Original Data
             df_processed = df_processed.merge(cluster_data[['Event User', 'Cluster Label']], on='Event User', how='left')
 
-            # Display Updated DataFrame
-            st.subheader("Updated DataFrame with Improved Clustering")
-            st.dataframe(df_processed)
+            # Step 2: Create Incident Patterns for Visualization
+            st.subheader("Visualization: Incident Patterns by Cluster")
+            incident_patterns = df_processed.groupby(['Cluster Label', 'Incident Type']).size().reset_index(name='Count')
 
-            # Step 5: Summarize Clusters
-            st.subheader("Cluster Summary")
-            cluster_summary = df_processed.groupby('Cluster Label').agg({
-                'Event User': 'nunique',
-                'Incident Type': lambda x: x.nunique(),
-                'Severity': lambda x: x.mode().iloc[0] if not x.mode().empty else None,
-                'Occurred (UTC)': 'count'
-            }).reset_index()
-            cluster_summary.columns = ['Cluster Label', 'Unique Users', 'Unique Incident Types', 'Most Common Severity', 'Total Incidents']
-            st.dataframe(cluster_summary)
+            # Display the DataFrame for verification
+            st.write("Incident Patterns by Cluster and Incident Type:")
+            st.dataframe(incident_patterns)
+
+            # Step 3: Plot the Cluster Analysis
+            st.subheader("Cluster Analysis: Incident Count by Incident Type")
+            import seaborn as sns
+            import matplotlib.pyplot as plt
+
+            # Plot the Bar Chart
+            plt.figure(figsize=(12, 6))
+            sns.barplot(
+                data=incident_patterns, 
+                x='Cluster Label',          # Use Cluster Label as X-axis
+                y='Count',                  # Use Count as Y-axis
+                hue='Incident Type',        # Color by Incident Type
+                palette='Set2'              # Use a color palette for better visualization
+            )
+
+            # Customize the Chart
+            plt.title("Incident Count by Cluster and Incident Type")
+            plt.xlabel("Cluster")
+            plt.ylabel("Incident Count")
+            plt.legend(title="Incident Type", bbox_to_anchor=(1.05, 1), loc='upper left')
+            st.pyplot(plt.gcf())  # Show the chart in Streamlit
 
         except Exception as e:
             st.error(f"Error analyzing user behavior: {e}")
     else:
         st.warning("No processed file found. Please identify incidents first.")
-
-
