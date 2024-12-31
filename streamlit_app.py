@@ -215,61 +215,6 @@ elif selected == "Pattern Mining":
     else:
         st.warning("No processed file found. Please identify incidents first.")
 
-# Analyze Relationship between Classification and Rule
-if 'Classification' in df_false.columns and 'Rule Set' in df_false.columns:
-    st.subheader("Relationship between Classification and Rule Set")
-    
-    # Cross-tabulation of Classification and Rule Set
-    classification_rule_ct = pd.crosstab(df_false['Classification'], df_false['Rule Set'])
-    
-    # Display the crosstab
-    st.write("Cross-tabulation of Classification and Rule Set:")
-    st.dataframe(classification_rule_ct)
-
-    # Convert crosstab to DataFrame for visualization
-    classification_rule_df = classification_rule_ct.stack().reset_index()
-    classification_rule_df.columns = ['Classification', 'Rule Set', 'Count']
-    
-    # Filter to show only significant relationships
-    significant_relationships = classification_rule_df[classification_rule_df['Count'] > 0]
-
-    # Bar Chart for Classification and Rule Set
-    st.subheader("Bar Chart of Classification and Rule Set Relationships")
-    bar_fig = px.bar(
-        significant_relationships,
-        x='Classification',
-        y='Count',
-        color='Rule Set',
-        title="Classification and Rule Set Relationships",
-        labels={'Count': 'Number of Cases'},
-        barmode='group'
-    )
-    st.plotly_chart(bar_fig)
-
-    # Heatmap for Classification and Rule Set
-    st.subheader("Heatmap of Classification and Rule Set")
-    heatmap_fig = px.density_heatmap(
-        significant_relationships,
-        x='Classification',
-        y='Rule Set',
-        z='Count',
-        color_continuous_scale='Viridis',
-        title="Heatmap of Classification and Rule Set"
-    )
-    st.plotly_chart(heatmap_fig)
-    
-    # Treemap for Classification and Rule Set
-    st.subheader("Treemap of Classification and Rule Set")
-    treemap_fig = px.treemap(
-        significant_relationships,
-        path=['Classification', 'Rule Set'],
-        values='Count',
-        title="Treemap of Classification and Rule Set Relationships"
-    )
-    st.plotly_chart(treemap_fig)
-else:
-    st.warning("Columns 'Classification' or 'Rule Set' not found in the dataset.")
-
 
 # Page 5: User Behavior Analysis
 elif selected == "User Behavior Analysis":
@@ -282,7 +227,7 @@ elif selected == "User Behavior Analysis":
             df_processed = pd.read_csv(processed_file, encoding='utf-8-sig')
 
             # Check for necessary columns
-            required_columns = ['Event User', 'Incident Type', 'Severity', 'Occurred (UTC)', 'Destination', 'Match_Label', 'Classification']
+            required_columns = ['Event User', 'Incident Type', 'Severity', 'Occurred (UTC)', 'Destination', 'Match_Label', 'Classification', 'Rule Set']
             missing_columns = [col for col in required_columns if col not in df_processed.columns]
             if missing_columns:
                 st.error(f"Missing required columns: {', '.join(missing_columns)}")
@@ -337,76 +282,62 @@ elif selected == "User Behavior Analysis":
             with st.expander("View False Data"):
                 st.dataframe(df_false)
 
-            # False Severity Analysis
-            if 'Severity' in df_false.columns:
-                st.subheader("False Severity Analysis")
-                false_severity_count = df_false['Severity'].value_counts().reset_index()
-                false_severity_count.columns = ['Severity', 'Count']
-                false_severity_fig = px.bar(
-                    false_severity_count,
-                    x='Severity',
-                    y='Count',
-                    color='Count',
-                    title="Severity Distribution for False Match_Label"
-                )
-                st.plotly_chart(false_severity_fig)
+            # Analyze Relationship between Classification and Rule Set
+            if 'Classification' in df_false.columns and 'Rule Set' in df_false.columns:
+                st.subheader("Relationship between Classification and Rule Set")
 
-            # False Incident Type Analysis
-            if 'Incident Type' in df_false.columns:
-                st.subheader("False Incident Type Analysis")
-                false_incident_type_count = df_false['Incident Type'].value_counts().reset_index()
-                false_incident_type_count.columns = ['Incident Type', 'Count']
-                false_incident_type_fig = px.bar(
-                    false_incident_type_count,
-                    x='Incident Type',
-                    y='Count',
-                    color='Count',
-                    title="Incident Type Distribution for False Match_Label"
-                )
-                st.plotly_chart(false_incident_type_fig)
+                # Cross-tabulation of Classification and Rule Set
+                classification_rule_ct = pd.crosstab(df_false['Classification'], df_false['Rule Set'])
 
-            # Frequent Words in Evident_data for False
-            if 'Evident_data' in df_false.columns:
-                st.subheader("Frequent Words in Evident_data (False)")
-                from collections import Counter
-                evident_words = df_false['Evident_data'].dropna().str.split().sum()
-                word_counts = Counter(evident_words).most_common(10)
-                word_df = pd.DataFrame(word_counts, columns=['Word', 'Count'])
+                # Display the crosstab
+                st.write("Cross-tabulation of Classification and Rule Set:")
+                st.dataframe(classification_rule_ct)
 
-                # Display frequent words
-                st.dataframe(word_df)
-                word_fig = px.bar(
-                    word_df,
-                    x='Word',
-                    y='Count',
-                    color='Count',
-                    title="Top Words in Evident_data for False Match_Label"
-                )
-                st.plotly_chart(word_fig)
+                # Convert crosstab to DataFrame for visualization
+                classification_rule_df = classification_rule_ct.stack().reset_index()
+                classification_rule_df.columns = ['Classification', 'Rule Set', 'Count']
 
-            # Top 3 Classifications for False
-            if 'Classification' in df_false.columns:
-                st.subheader("Top 3 Classifications for False Match_Label")
-                false_classifications = df_false['Classification'].value_counts().reset_index().head(3)
-                false_classifications.columns = ['Classification', 'Count']
+                # Filter to show only significant relationships
+                significant_relationships = classification_rule_df[classification_rule_df['Count'] > 0]
 
-                # Display Top 3 Classifications
-                st.dataframe(false_classifications)
-
-                # Visualization for Top 3 Classifications
-                classification_fig = px.bar(
-                    false_classifications,
+                # Bar Chart for Classification and Rule Set
+                st.subheader("Bar Chart of Classification and Rule Set Relationships")
+                bar_fig = px.bar(
+                    significant_relationships,
                     x='Classification',
                     y='Count',
-                    color='Count',
-                    title="Top 3 Classifications for False Match_Label"
+                    color='Rule Set',
+                    title="Classification and Rule Set Relationships",
+                    labels={'Count': 'Number of Cases'},
+                    barmode='group'
                 )
-                st.plotly_chart(classification_fig)
+                st.plotly_chart(bar_fig)
+
+                # Heatmap for Classification and Rule Set
+                st.subheader("Heatmap of Classification and Rule Set")
+                heatmap_fig = px.density_heatmap(
+                    significant_relationships,
+                    x='Classification',
+                    y='Rule Set',
+                    z='Count',
+                    color_continuous_scale='Viridis',
+                    title="Heatmap of Classification and Rule Set"
+                )
+                st.plotly_chart(heatmap_fig)
+
+                # Treemap for Classification and Rule Set
+                st.subheader("Treemap of Classification and Rule Set")
+                treemap_fig = px.treemap(
+                    significant_relationships,
+                    path=['Classification', 'Rule Set'],
+                    values='Count',
+                    title="Treemap of Classification and Rule Set Relationships"
+                )
+                st.plotly_chart(treemap_fig)
             else:
-                st.warning("Column 'Classification' not found in the dataset.")
+                st.warning("Columns 'Classification' or 'Rule Set' not found in the dataset.")
 
         except Exception as e:
             st.error(f"Error analyzing user behavior: {e}")
     else:
         st.warning("No processed file found. Please identify incidents first.")
-
