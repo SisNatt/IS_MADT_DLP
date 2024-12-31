@@ -220,13 +220,6 @@ elif selected == "Pattern Mining":
     else:
         st.warning("No processed file found. Please identify incidents first.")
 
-# เพิ่มการ import ไลบรารีที่จำเป็น
-from sklearn.cluster import KMeans
-from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import silhouette_score
-import seaborn as sns
-import matplotlib.pyplot as plt
-
 # Page 5: User Behavior Analysis
 elif selected == "User Behavior Analysis":
     st.title("📈 User Behavior Analysis")
