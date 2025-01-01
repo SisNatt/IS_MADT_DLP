@@ -390,3 +390,86 @@ elif selected == "User Behavior Analysis":
     else:
         st.warning("No processed file found. Please identify incidents first.")
 
+# Menu 6: Anomaly Detection
+elif selected == "Anomaly Detection":
+    st.title("🚨 Anomaly Detection")
+
+    if 'processed_file' in st.session_state:
+        try:
+            # Load the processed file
+            processed_file = st.session_state['processed_file']
+            df_processed = pd.read_csv(processed_file, encoding='utf-8-sig')
+
+            # Check for necessary columns
+            required_columns = ['Event User', 'Incident Type', 'Severity', 'Occurred (UTC)', 'Classification', 'Rule Set', 'Match_Label']
+            missing_columns = [col for col in required_columns if col not in df_processed.columns]
+            if missing_columns:
+                st.error(f"Missing required columns: {', '.join(missing_columns)}")
+                st.stop()
+
+            # Step 1: Prepare Data for Anomaly Detection
+            st.subheader("Step 1: Data Preparation")
+
+            # Create new features
+            df_processed['Incident Count'] = df_processed.groupby('Event User')['Event User'].transform('count')
+            df_processed['Unique Incident Types'] = df_processed.groupby('Event User')['Incident Type'].transform('nunique')
+            severity_mapping = {'Low': 1, 'Medium': 2, 'High': 3, 'Critical': 4}
+            df_processed['Severity Numeric'] = df_processed['Severity'].map(severity_mapping).fillna(0)
+
+            # Prepare data for modeling
+            anomaly_features = df_processed[['Incident Count', 'Unique Incident Types', 'Severity Numeric']].drop_duplicates()
+            st.dataframe(anomaly_features)
+
+            # Step 2: Apply Isolation Forest for Anomaly Detection
+            st.subheader("Step 2: Anomaly Detection Using Isolation Forest")
+
+            from sklearn.ensemble import IsolationForest
+            
+            # Normalize the features
+            from sklearn.preprocessing import StandardScaler
+            scaler = StandardScaler()
+            scaled_features = scaler.fit_transform(anomaly_features)
+
+            # Train Isolation Forest
+            isolation_forest = IsolationForest(contamination=0.05, random_state=42)
+            anomaly_features['Anomaly'] = isolation_forest.fit_predict(scaled_features)
+
+            # Mark anomalies (-1 as anomalies, 1 as normal)
+            anomaly_features['Anomaly'] = anomaly_features['Anomaly'].apply(lambda x: 'Anomaly' if x == -1 else 'Normal')
+            st.write("Anomaly Detection Results:")
+            st.dataframe(anomaly_features)
+
+            # Step 3: Visualize Anomalies
+            st.subheader("Step 3: Anomaly Visualization")
+
+            import plotly.express as px
+
+            # Scatter plot for anomalies
+            fig = px.scatter(
+                anomaly_features,
+                x='Incident Count',
+                y='Severity Numeric',
+                color='Anomaly',
+                title="Anomaly Detection Visualization",
+                labels={'Incident Count': 'Incident Count', 'Severity Numeric': 'Severity (Numeric)'}
+            )
+            st.plotly_chart(fig)
+
+            # Step 4: Analyze Anomalous Users or Incidents
+            st.subheader("Step 4: Analysis of Anomalous Data")
+
+            anomalous_data = anomaly_features[anomaly_features['Anomaly'] == 'Anomaly']
+            st.write("Anomalous Data Summary:")
+            st.dataframe(anomalous_data)
+
+            # Identify associated users and incidents
+            anomalous_users = df_processed[df_processed['Event User'].isin(anomalous_data.index)]
+            st.write("Details of Users with Anomalies:")
+            st.dataframe(anomalous_users)
+
+        except Exception as e:
+            st.error(f"Error analyzing anomalies: {e}")
+    else:
+        st.warning("No processed file found. Please identify incidents first.")
+
+
