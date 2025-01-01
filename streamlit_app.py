@@ -163,133 +163,135 @@ elif selected == "View Processed Data":
 # Pattern Mining section
 elif selected == "Pattern Mining":
     st.title("🔍 Pattern Mining for Incidents")
+
     if 'processed_file' in st.session_state:
         try:
             processed_file = st.session_state['processed_file']
             df_processed = pd.read_csv(processed_file, encoding='utf-8-sig')
-            
+
             if 'Incident Type' not in df_processed.columns:
                 st.error("The column 'Incident Type' is not available in the processed data.")
                 st.stop()
-            
+
             # Step 1: Prepare Data
             st.subheader("Step 1: Prepare Data")
             incident_types = df_processed['Incident Type'].str.get_dummies(sep=',')
             st.write("Dummy-encoded Incident Types:")
             st.dataframe(incident_types)
-            
+
             # Step 2: Find Frequent Itemsets
             st.subheader("Step 2: Find Frequent Itemsets")
             min_support = st.slider("Select Minimum Support", 0.01, 1.0, 0.05, step=0.01)
             frequent_itemsets = apriori(incident_types, min_support=min_support, use_colnames=True)
-            
+
             if not frequent_itemsets.empty:
                 st.write("Frequent Itemsets:")
                 st.dataframe(frequent_itemsets)
-                
-               # Step 3: Generate Association Rules
+
+                # Step 3: Generate Association Rules
                 st.subheader("Step 3: Generate Association Rules")
                 min_confidence = st.slider("Select Minimum Confidence", 0.1, 1.0, 0.5, step=0.1)
                 rules = association_rules(
-                    frequent_itemsets, 
-                    metric="confidence", 
+                    frequent_itemsets,
+                    metric="confidence",
                     min_threshold=min_confidence
                 )
 
-            if not rules.empty:
-                st.write("Association Rules:")
-                st.dataframe(rules)
+                if not rules.empty:
+                    st.write("Association Rules:")
+                    st.dataframe(rules)
 
-                fig = px.scatter(
-                    rules,
-                    x="support",
-                    y="confidence",
-                    size="lift",
-                    color="antecedents",
-                    title="Support vs Confidence",
-                    labels={"antecedents": "Antecedent Patterns"}
+                    fig = px.scatter(
+                        rules,
+                        x="support",
+                        y="confidence",
+                        size="lift",
+                        color="antecedents",
+                        title="Support vs Confidence",
+                        labels={"antecedents": "Antecedent Patterns"}
+                    )
+                    st.plotly_chart(fig)
+                else:
+                    st.warning("No association rules found. Try reducing the minimum confidence value.")
+
+                # Additional Analysis for Incident Trends
+                st.subheader("Step 4: Incident Trends and Patterns")
+
+                # Monthly Trend Analysis
+                st.write("**Trend Analysis: Monthly Incident Distribution**")
+                df_processed['Occurred (UTC)'] = pd.to_datetime(df_processed['Occurred (UTC)'])
+                df_processed['Month'] = df_processed['Occurred (UTC)'].dt.to_period('M')
+                monthly_trends = df_processed.groupby('Month').size().reset_index(name='Incident Count')
+                fig_trend = px.line(
+                    monthly_trends,
+                    x='Month',
+                    y='Incident Count',
+                    title="Monthly Trend of Incidents",
+                    labels={'Month': 'Month', 'Incident Count': 'Number of Incidents'}
                 )
-                st.plotly_chart(fig)
-        else:
-            st.warning("No association rules found. Try reducing the minimum confidence value.")
+                st.plotly_chart(fig_trend)
 
-            # Additional Analysis for Incident Trends
-            st.subheader("Step 4: Incident Trends and Patterns")
-
-            # Monthly Trend Analysis
-            st.write("**Trend Analysis: Monthly Incident Distribution**")
-            df_processed['Occurred (UTC)'] = pd.to_datetime(df_processed['Occurred (UTC)'])
-            df_processed['Month'] = df_processed['Occurred (UTC)'].dt.to_period('M')
-            monthly_trends = df_processed.groupby('Month').size().reset_index(name='Incident Count')
-            fig_trend = px.line(
-                monthly_trends,
-                x='Month',
-                y='Incident Count',
-                title="Monthly Trend of Incidents",
-                labels={'Month': 'Month', 'Incident Count': 'Number of Incidents'}
-            )
-            st.plotly_chart(fig_trend)
-
-            # Top Incident Types
-            st.write("**Top Incident Types**")
-            top_incident_types = df_processed['Incident Type'].value_counts().head(10).reset_index()
-            top_incident_types.columns = ['Incident Type', 'Count']
-            fig_top_types = px.bar(
-                top_incident_types,
-                x='Incident Type',
-                y='Count',
-                color='Count',
-                title="Top 10 Incident Types",
-                labels={'Incident Type': 'Incident Type', 'Count': 'Number of Incidents'}
-            )
-            st.plotly_chart(fig_top_types
-            )
-
-            # Severity and Incident Type Heatmap
-            st.write("**Severity vs Incident Type Heatmap**")
-            heatmap_data = df_processed.groupby(['Severity', 'Incident Type']).size().reset_index(name='Count')
-            fig_heatmap = px.density_heatmap(
-                heatmap_data,
-                x='Incident Type',
-                y='Severity',
-                z='Count',
-                title="Heatmap of Severity vs Incident Type",
-                labels={'Incident Type': 'Incident Type', 'Severity': 'Severity', 'Count': 'Number of Incidents'}
-            )
-            st.plotly_chart(fig_heatmap)
-
-            # Rule Impact Analysis
-            if 'Rule Set' in df_processed.columns:
-                st.write("**Rule Impact Analysis**")
-                rule_impact = df_processed['Rule Set'].value_counts().head(10).reset_index()
-                rule_impact.columns = ['Rule Set', 'Count']
-                fig_rule_impact = px.bar(
-                    rule_impact,
-                    x='Rule Set',
+                # Top Incident Types
+                st.write("**Top Incident Types**")
+                top_incident_types = df_processed['Incident Type'].value_counts().head(10).reset_index()
+                top_incident_types.columns = ['Incident Type', 'Count']
+                fig_top_types = px.bar(
+                    top_incident_types,
+                    x='Incident Type',
                     y='Count',
                     color='Count',
-                    title="Top 10 Rules Triggering Incidents",
-                    labels={'Rule Set': 'Rule Set', 'Count': 'Number of Incidents'}
+                    title="Top 10 Incident Types",
+                    labels={'Incident Type': 'Incident Type', 'Count': 'Number of Incidents'}
                 )
-                st.plotly_chart(fig_rule_impact)
+                st.plotly_chart(fig_top_types)
 
-            # Incident Duration Analysis
-            st.write("**Incident Duration Analysis**")
-            if 'Time' in df_processed.columns:
-                df_processed['Duration'] = pd.to_numeric(df_processed['Time'], errors='coerce')
-                duration_stats = df_processed['Duration'].describe()
-                st.write(f"Incident Duration Statistics:")
-                st.write(duration_stats)
-
-                fig_duration = px.histogram(
-                    df_processed,
-                    x='Duration',
-                    nbins=20,
-                    title="Incident Duration Distribution",
-                    labels={'Duration': 'Duration (seconds)'}
+                # Severity and Incident Type Heatmap
+                st.write("**Severity vs Incident Type Heatmap**")
+                heatmap_data = df_processed.groupby(['Severity', 'Incident Type']).size().reset_index(name='Count')
+                fig_heatmap = px.density_heatmap(
+                    heatmap_data,
+                    x='Incident Type',
+                    y='Severity',
+                    z='Count',
+                    title="Heatmap of Severity vs Incident Type",
+                    labels={'Incident Type': 'Incident Type', 'Severity': 'Severity', 'Count': 'Number of Incidents'}
                 )
-                st.plotly_chart(fig_duration)
+                st.plotly_chart(fig_heatmap)
 
+                # Rule Impact Analysis
+                if 'Rule Set' in df_processed.columns:
+                    st.write("**Rule Impact Analysis**")
+                    rule_impact = df_processed['Rule Set'].value_counts().head(10).reset_index()
+                    rule_impact.columns = ['Rule Set', 'Count']
+                    fig_rule_impact = px.bar(
+                        rule_impact,
+                        x='Rule Set',
+                        y='Count',
+                        color='Count',
+                        title="Top 10 Rules Triggering Incidents",
+                        labels={'Rule Set': 'Rule Set', 'Count': 'Number of Incidents'}
+                    )
+                    st.plotly_chart(fig_rule_impact)
+
+                # Incident Duration Analysis
+                st.write("**Incident Duration Analysis**")
+                if 'Time' in df_processed.columns:
+                    df_processed['Duration'] = pd.to_numeric(df_processed['Time'], errors='coerce')
+                    duration_stats = df_processed['Duration'].describe()
+                    st.write(f"Incident Duration Statistics:")
+                    st.write(duration_stats)
+
+                    fig_duration = px.histogram(
+                        df_processed,
+                        x='Duration',
+                        nbins=20,
+                        title="Incident Duration Distribution",
+                        labels={'Duration': 'Duration (seconds)'}
+                    )
+                    st.plotly_chart(fig_duration)
+
+            else:
+                st.warning("No frequent itemsets found. Try reducing the minimum support value.")
         except Exception as e:
             st.error(f"Error during pattern mining: {e}")
     else:
