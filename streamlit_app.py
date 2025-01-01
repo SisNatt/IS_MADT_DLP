@@ -172,11 +172,13 @@ elif selected == "Pattern Mining":
                 st.error("The column 'Incident Type' is not available in the processed data.")
                 st.stop()
             
+            # Step 1: Prepare Data
             st.subheader("Step 1: Prepare Data")
             incident_types = df_processed['Incident Type'].str.get_dummies(sep=',')
             st.write("Dummy-encoded Incident Types:")
             st.dataframe(incident_types)
             
+            # Step 2: Find Frequent Itemsets
             st.subheader("Step 2: Find Frequent Itemsets")
             min_support = st.slider("Select Minimum Support", 0.01, 1.0, 0.05, step=0.01)
             frequent_itemsets = apriori(incident_types, min_support=min_support, use_colnames=True)
@@ -185,17 +187,10 @@ elif selected == "Pattern Mining":
                 st.write("Frequent Itemsets:")
                 st.dataframe(frequent_itemsets)
                 
+                # Step 3: Generate Association Rules
                 st.subheader("Step 3: Generate Association Rules")
                 min_confidence = st.slider("Select Minimum Confidence", 0.1, 1.0, 0.5, step=0.1)
-                
-                # แก้ไขส่วนนี้
-                rules = association_rules(
-                    frequent_itemsets, 
-                    metric="confidence",
-                    min_threshold=min_confidence,
-                    support_only=False,  # เพิ่มพารามิเตอร์นี้
-                    num_itemsets=1  # เพิ่มบรรทัดนี้
-                )
+                rules = association_rules(frequent_itemsets, metric="confidence", min_threshold=min_confidence)
                 
                 if not rules.empty:
                     st.write("Association Rules:")
@@ -215,10 +210,37 @@ elif selected == "Pattern Mining":
                     st.warning("No association rules found. Try reducing the minimum confidence value.")
             else:
                 st.warning("No frequent itemsets found. Try reducing the minimum support value.")
-        except Exception as e:
-            st.error(f"Error during pattern mining: {e}")
-    else:
-        st.warning("No processed file found. Please identify incidents first.")
+
+            # Additional Analysis for Incident Trends
+            st.subheader("Step 4: Incident Trends and Patterns")
+
+            # Monthly Trend Analysis
+            st.write("**Trend Analysis: Monthly Incident Distribution**")
+            df_processed['Occurred (UTC)'] = pd.to_datetime(df_processed['Occurred (UTC)'])
+            df_processed['Month'] = df_processed['Occurred (UTC)'].dt.to_period('M')
+            monthly_trends = df_processed.groupby('Month').size().reset_index(name='Incident Count')
+            fig_trend = px.line(
+                monthly_trends,
+                x='Month',
+                y='Incident Count',
+                title="Monthly Trend of Incidents",
+                labels={'Month': 'Month', 'Incident Count': 'Number of Incidents'}
+            )
+            st.plotly_chart(fig_trend)
+
+            # Top Incident Types
+            st.write("**Top Incident Types**")
+            top_incident_types = df_processed['Incident Type'].value_counts().head(10).reset_index()
+            top_incident_types.columns = ['Incident Type', 'Count']
+            fig_top_types = px.bar(
+                top_incident_types,
+                x='Incident Type',
+                y='Count',
+                color='Count',
+                title="Top 10 Incident Types",
+                labels={'Incident Type': 'Incident Type', 'Count': 'Number of Incidents'}
+            )
+            st.plotly_chart(fig_top_types
 
 # Page 5: User Behavior Analysis
 elif selected == "User Behavior Analysis":
