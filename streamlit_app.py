@@ -388,6 +388,18 @@ elif selected == "User Behavior Analysis":
                 hue='Incident Type',        # Color by Incident Type
                 palette='Set2'              # Use a color palette for better visualization
             )
+            # อธิบาย Cluster Analysis
+            st.subheader("Cluster Analysis Insights")
+            cluster_summary = cluster_data.groupby('Cluster Label').agg({
+            'Incident Count': 'mean',
+            'Severity Numeric': 'mean',
+            }).reset_index()
+            cluster_summary['Risk Level'] = cluster_summary['Severity Numeric'].apply(
+            lambda x: 'High' if x > 3 else 'Medium' if x > 2 else 'Low'
+            )
+            st.write("Cluster Summary and Risk Level:")
+            st.dataframe(cluster_summary)
+
 
             # Customize the Chart
             plt.title("Incident Count by Cluster and Incident Type")
