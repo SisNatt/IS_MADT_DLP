@@ -21,8 +21,8 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 # Main Menu
 selected = option_menu(
     "Main Menu", 
-    ["Home - Raw Data", "View Processed Data", "Pattern Mining", "User Behavior Analysis"], 
-    icons=['house', 'bar-chart', 'diagram-3', 'person'], 
+    ["Home - Raw Data", "View Processed Data", "Pattern Mining", "User Behavior Analysis", "Anomaly Detection"], 
+    icons=['house', 'bar-chart', 'diagram-3', 'person', '🚨' ], 
     menu_icon="cast", 
     default_index=0
 )
