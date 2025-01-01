@@ -7,10 +7,11 @@ from mlxtend.frequent_patterns import apriori, association_rules
 import plotly.express as px
 from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
-from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import silhouette_score
 import seaborn as sns
 import matplotlib.pyplot as plt
+from sklearn.ensemble import IsolationForest
+from collections import Counter
 
 # File paths
 INCIDENT_FILE = "https://drive.google.com/uc?id=1ueLKSgaNhvPEAjJsqad4iMcDfxsM8Nie"
@@ -22,7 +23,7 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 selected = option_menu(
     "Main Menu", 
     ["Home - Raw Data", "View Processed Data", "Pattern Mining", "User Behavior Analysis", "Anomaly Detection"], 
-    icons=['house', 'bar-chart', 'diagram-3', 'person', 'bell-exclamation' ], 
+    icons=['house', 'bar-chart', 'diagram-3', 'person', 'bell-exclamation'], 
     menu_icon="cast", 
     default_index=0
 )
@@ -159,10 +160,9 @@ elif selected == "View Processed Data":
     else:
         st.warning("No processed file found. Please identify incidents first.")
 
-
 # Pattern Mining section
 elif selected == "Pattern Mining":
-    st.title("\U0001F50D Pattern Mining for Incidents")
+    st.title("🔍 Pattern Mining for Incidents")
 
     if 'processed_file' in st.session_state:
         try:
@@ -174,15 +174,14 @@ elif selected == "Pattern Mining":
                 st.error("The column 'Incident Type' is not available in the processed data.")
                 st.stop()
 
-            # Step 1: Incident Trends and Patterns
-            st.subheader("Step 1: Incident Trends and Patterns")
+            # Incident Trends and Patterns
+            st.subheader("Incident Trends and Patterns")
 
             # Convert 'Occurred (UTC)' to datetime format
             df_processed['Occurred (UTC)'] = pd.to_datetime(df_processed['Occurred (UTC)'])
 
             # Weekly Trend Analysis
-            st.write("**Weekly Incident Distribution**")
-            df_processed['Week'] = df_processed['Occurred (UTC)'].dt.to_period('W').astype(str)  # Convert Period to string
+            df_processed['Week'] = df_processed['Occurred (UTC)'].dt.to_period('W').astype(str)
             weekly_trends = df_processed.groupby('Week').size().reset_index(name='Incident Count')
             fig_trend = px.line(
                 weekly_trends,
@@ -194,7 +193,6 @@ elif selected == "Pattern Mining":
             st.plotly_chart(fig_trend)
 
             # Severity and Incident Type Heatmap
-            st.write("**Severity vs Incident Type Heatmap**")
             heatmap_data = df_processed.groupby(['Severity', 'Incident Type']).size().reset_index(name='Count')
             fig_heatmap = px.density_heatmap(
                 heatmap_data,
@@ -211,283 +209,44 @@ elif selected == "Pattern Mining":
     else:
         st.warning("No processed file found. Please identify incidents first.")
 
-
-# Page 5: User Behavior Analysis
+# User Behavior Analysis
 elif selected == "User Behavior Analysis":
     st.title("📈 User Behavior Analysis")
 
     if 'processed_file' in st.session_state:
         try:
-            # Load the processed file
             processed_file = st.session_state['processed_file']
             df_processed = pd.read_csv(processed_file, encoding='utf-8-sig')
 
-            # Check for necessary columns
-            required_columns = ['Event User', 'Incident Type', 'Severity', 'Occurred (UTC)', 'Destination', 'Match_Label']
-            missing_columns = [col for col in required_columns if col not in df_processed.columns]
-            if missing_columns:
-                st.error(f"Missing required columns: {', '.join(missing_columns)}")
-                st.stop()
+            st.subheader("Analyze False Positive and Negative Cases")
+            false_cases = df_processed[df_processed['Match_Label'] == False]
+            st.write(f"Total False Cases: {len(false_cases)}")
 
-            # Step 1: User Behavior Profile
-            st.subheader("Step 1: User Behavior Profile")
-            user_behavior = df_processed.groupby('Event User').agg({
-                'Incident Type': lambda x: x.mode().iloc[0] if not x.mode().empty else None,
-                'Severity': lambda x: x.mode().iloc[0] if not x.mode().empty else None,
-                'Destination': lambda x: x.mode().iloc[0] if not x.mode().empty else None,
-                'Occurred (UTC)': 'count'
-            }).reset_index()
-            user_behavior.columns = ['Event User', 'Most Frequent Incident Type', 'Most Frequent Severity',
-                                     'Most Frequent Destination', 'Total Incidents']
-            st.dataframe(user_behavior)
+            # Severity distribution
+            if 'Severity' in false_cases.columns:
+                severity_count = false_cases['Severity'].value_counts().reset_index()
+                severity_count.columns = ['Severity', 'Count']
+                fig = px.bar(severity_count, x='Severity', y='Count', title="Severity Distribution in False Cases")
+                st.plotly_chart(fig)
 
-            # Step 2: Timeline of Top 5 Users
-            st.subheader("Timeline of Top 5 Users' Incidents (Last Month)")
-            df_processed['Occurred (UTC)'] = pd.to_datetime(df_processed['Occurred (UTC)'])
-            last_month = datetime.now() - pd.DateOffset(months=1)
-            filtered_data = df_processed[df_processed['Occurred (UTC)'] >= last_month]
-            incident_user_count = filtered_data['Event User'].value_counts().reset_index()
-            incident_user_count.columns = ['Event User', 'Total Incidents']
-            top_users = incident_user_count.head(5)['Event User'].tolist()
-            filtered_data_top_users = filtered_data[filtered_data['Event User'].isin(top_users)]
-            timeline_data = filtered_data_top_users.groupby(
-                [filtered_data_top_users['Occurred (UTC)'].dt.date, 'Event User']
-            ).size().reset_index(name='Incident Count')
-
-            # Plot timeline
-            fig = px.line(
-                timeline_data,
-                x='Occurred (UTC)',
-                y='Incident Count',
-                color='Event User',
-                title="Timeline of Incidents for Top 5 Users (Last Month)",
-                labels={'Occurred (UTC)': 'Date', 'Incident Count': 'Number of Incidents'},
-                markers=True
-            )
-            st.plotly_chart(fig)
-
-            # Step 3: Focus on Match_Label = False
-            st.subheader("Step 3: Focus on Match_Label = False")
-            df_processed['Match_Label'] = df_processed['Match_Label'].apply(
-                lambda x: True if str(x).strip().lower() == 'true' else False
-            )
-            df_false = df_processed[df_processed['Match_Label'] == False]
-            st.write(f"Total False records: {len(df_false)}")
-
-            # Display False data
-            with st.expander("View False Data"):
-                st.dataframe(df_false)
-
-            # False Severity Analysis
-            if 'Severity' in df_false.columns:
-                st.subheader("False Severity Analysis")
-                false_severity_count = df_false['Severity'].value_counts().reset_index()
-                false_severity_count.columns = ['Severity', 'Count']
-                false_severity_fig = px.bar(
-                    false_severity_count,
-                    x='Severity',
-                    y='Count',
-                    color='Count',
-                    title="Severity Distribution for False Match_Label"
-                )
-                st.plotly_chart(false_severity_fig)
-
-            # False Incident Type Analysis
-            if 'Incident Type' in df_false.columns:
-                st.subheader("False Incident Type Analysis")
-                false_incident_type_count = df_false['Incident Type'].value_counts().reset_index()
-                false_incident_type_count.columns = ['Incident Type', 'Count']
-                false_incident_type_fig = px.bar(
-                    false_incident_type_count,
-                    x='Incident Type',
-                    y='Count',
-                    color='Count',
-                    title="Incident Type Distribution for False Match_Label"
-                )
-                st.plotly_chart(false_incident_type_fig)
-
-            # Frequent Words in Evident_data for False
-            if 'Evident_data' in df_false.columns:
-                st.subheader("Frequent Words in Evident_data (False)")
-                from collections import Counter
-                evident_words = df_false['Evident_data'].dropna().str.split().sum()
+            # Frequent words in 'Evident_data'
+            if 'Evident_data' in false_cases.columns:
+                evident_words = false_cases['Evident_data'].dropna().str.split().sum()
                 word_counts = Counter(evident_words).most_common(10)
                 word_df = pd.DataFrame(word_counts, columns=['Word', 'Count'])
-
-                # Display frequent words
+                st.write("Frequent Words in False Cases:")
                 st.dataframe(word_df)
-                word_fig = px.bar(
-                    word_df,
-                    x='Word',
-                    y='Count',
-                    color='Count',
-                    title="Top Words in Evident_data for False Match_Label"
-                )
+                word_fig = px.bar(word_df, x='Word', y='Count', title="Frequent Words in Evident_data")
                 st.plotly_chart(word_fig)
 
-            # Clustering Analysis
-            st.subheader("Clustering Incident Data")
-            cluster_data = df_processed[['Event User', 'Incident Type', 'Severity', 'Occurred (UTC)']].copy()
-
-            # Create new features
-            cluster_data['Incident Count'] = cluster_data.groupby('Event User')['Event User'].transform('count')
-            cluster_data['Unique Incident Types'] = cluster_data.groupby('Event User')['Incident Type'].transform('nunique')
-            severity_mapping = {'Low': 1, 'Medium': 2, 'High': 3, 'Critical': 4}
-            cluster_data['Severity Numeric'] = cluster_data['Severity'].map(severity_mapping).fillna(0)
-
-            # Drop duplicates and unnecessary columns
-            cluster_data = cluster_data[['Event User', 'Incident Count', 'Unique Incident Types', 'Severity Numeric']].drop_duplicates()
-
-            # Standardize the data
-            scaler = StandardScaler()
-            scaled_features = scaler.fit_transform(cluster_data[['Incident Count', 'Unique Incident Types', 'Severity Numeric']])
-
-            # Perform K-Means Clustering
-            kmeans = KMeans(n_clusters=5, random_state=42)
-            cluster_data['Cluster Label'] = kmeans.fit_predict(scaled_features)
-
-            # Add Cluster Labels Back to Original Data
-            df_processed = df_processed.merge(cluster_data[['Event User', 'Cluster Label']], on='Event User', how='left')
-
-            # Step 2: Create Incident Patterns for Visualization
-            st.subheader("Visualization: Incident Patterns by Cluster")
-            incident_patterns = df_processed.groupby(['Cluster Label', 'Incident Type']).size().reset_index(name='Count')
-
-            # Display the DataFrame for verification
-            st.write("Incident Patterns by Cluster and Incident Type:")
-            st.dataframe(incident_patterns)
-
-            # Step 3: Plot the Cluster Analysis
-            st.subheader("Cluster Analysis: Incident Count by Incident Type")
-
-            # Plot the Bar Chart
-            plt.figure(figsize=(12, 6))
-            sns.barplot(
-                data=incident_patterns, 
-                x='Cluster Label',          # Use Cluster Label as X-axis
-                y='Count',                  # Use Count as Y-axis
-                hue='Incident Type',        # Color by Incident Type
-                palette='Set2'              # Use a color palette for better visualization
+            st.subheader("Policy Recommendations")
+            recommendations = false_cases.groupby('Incident Type').size().reset_index(name='False Count')
+            recommendations['Recommendation'] = recommendations['Incident Type'].apply(
+                lambda x: f"Adjust rules for '{x}' to reduce False Cases"
             )
-
-            # Customize the Chart
-            plt.title("Incident Count by Cluster and Incident Type")
-            plt.xlabel("Cluster")
-            plt.ylabel("Incident Count")
-            plt.legend(title="Incident Type", bbox_to_anchor=(1.05, 1), loc='upper left')
-            st.pyplot(plt.gcf())  # Show the chart in Streamlit
+            st.dataframe(recommendations)
 
         except Exception as e:
             st.error(f"Error analyzing user behavior: {e}")
     else:
         st.warning("No processed file found. Please identify incidents first.")
-
-# Menu 6: Anomaly Detection
-elif selected == "Anomaly Detection":
-    st.title("🚨 Anomaly Detection")
-
-    if 'processed_file' in st.session_state:
-        try:
-            # Load the processed file
-            processed_file = st.session_state['processed_file']
-            df_processed = pd.read_csv(processed_file, encoding='utf-8-sig')
-
-            # Check for necessary columns
-            required_columns = ['Event User', 'Incident Type', 'Severity', 'Occurred (UTC)', 'Classification', 'Rule Set', 'Match_Label']
-            missing_columns = [col for col in required_columns if col not in df_processed.columns]
-            if missing_columns:
-                st.error(f"Missing required columns: {', '.join(missing_columns)}")
-                st.stop()
-
-            # Step 1: Data Preparation for Anomaly Detection
-            st.subheader("Step 1: Data Preparation")
-
-            # Create new features
-            df_processed['Incident Count'] = df_processed.groupby('Event User')['Event User'].transform('count')
-            df_processed['Unique Incident Types'] = df_processed.groupby('Event User')['Incident Type'].transform('nunique')
-            severity_mapping = {'Low': 1, 'Medium': 2, 'High': 3, 'Critical': 4}
-            df_processed['Severity Numeric'] = df_processed['Severity'].map(severity_mapping).fillna(0)
-
-            # Prepare data for modeling
-            anomaly_features = df_processed[['Event User', 'Incident Count', 'Unique Incident Types', 'Severity Numeric']].drop_duplicates()
-            st.write("Prepared Data for Anomaly Detection:")
-            st.dataframe(anomaly_features)
-
-            # Step 2: Apply Isolation Forest for Anomaly Detection
-            st.subheader("Step 2: Anomaly Detection Using Isolation Forest")
-
-            from sklearn.ensemble import IsolationForest
-            from sklearn.preprocessing import StandardScaler
-            
-            # Normalize the features
-            scaler = StandardScaler()
-            scaled_features = scaler.fit_transform(anomaly_features[['Incident Count', 'Unique Incident Types', 'Severity Numeric']])
-
-            # Train Isolation Forest
-            isolation_forest = IsolationForest(contamination=0.05, random_state=42)
-            anomaly_features['Anomaly'] = isolation_forest.fit_predict(scaled_features)
-
-            # Mark anomalies (-1 as anomalies, 1 as normal)
-            anomaly_features['Anomaly'] = anomaly_features['Anomaly'].apply(lambda x: 'Anomaly' if x == -1 else 'Normal')
-            st.write("Anomaly Detection Results:")
-            st.dataframe(anomaly_features)
-
-            # Step 3: Visualize Anomalies
-            st.subheader("Step 3: Anomaly Visualization")
-
-            import plotly.express as px
-
-            # Scatter plot for anomalies
-            fig = px.scatter(
-                anomaly_features,
-                x='Incident Count',
-                y='Severity Numeric',
-                color='Anomaly',
-                title="Anomaly Detection Visualization",
-                labels={'Incident Count': 'Incident Count', 'Severity Numeric': 'Severity (Numeric)'}
-            )
-            st.plotly_chart(fig)
-
-            # Step 4: Analyze Anomalous Data
-            st.subheader("Step 4: Analysis of Anomalous Data")
-
-            anomalous_data = anomaly_features[anomaly_features['Anomaly'] == 'Anomaly']
-            if anomalous_data.empty:
-                st.warning("No anomalies detected. Try adjusting the contamination parameter.")
-            else:
-                st.write("Anomalous Data Summary:")
-                st.dataframe(anomalous_data)
-
-                # Identify associated users and incidents
-                anomalous_users = df_processed[df_processed['Event User'].isin(anomalous_data['Event User'])]
-                if anomalous_users.empty:
-                    st.warning("No matching users found for the detected anomalies.")
-                else:
-                    st.write("Details of Users with Anomalies:")
-                    st.dataframe(
-                        anomalous_users.drop(columns=['Incident ID'])  # Exclude 'Incident ID' column from the display
-                    )
-
-                    # Step 5: Top 10 Anomalous Users Visualization
-                    st.subheader("Top 10 Anomalous Users by Incident Count")
-                    top_anomalous_users = anomalous_users.groupby('Event User')['Incident Count'].max().reset_index()
-                    top_anomalous_users = top_anomalous_users.sort_values(by='Incident Count', ascending=False).head(10)
-
-                    # Visualization for Top 10 Anomalous Users
-                    top_users_fig = px.bar(
-                        top_anomalous_users,
-                        x='Event User',
-                        y='Incident Count',
-                        color='Incident Count',
-                        title="Top 10 Anomalous Users by Incident Count",
-                        labels={'Incident Count': 'Incident Count', 'Event User': 'Event User'}
-                    )
-                    st.plotly_chart(top_users_fig)
-
-        except Exception as e:
-            st.error(f"Error analyzing anomalies: {e}")
-    else:
-        st.warning("No processed file found. Please identify incidents first.")
-
-
-
