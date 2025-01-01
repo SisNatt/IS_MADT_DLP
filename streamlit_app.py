@@ -268,6 +268,22 @@ elif selected == "User Behavior Analysis":
             with st.expander("View False Data"):
                 st.dataframe(df_false)
 
+            # Analyze Classification with highest frequency
+            if 'Classification' in df_false.columns:
+                st.subheader("Most Frequent Classification in False Cases")
+                classification_count = df_false['Classification'].value_counts().reset_index()
+                classification_count.columns = ['Classification', 'Count']
+                most_frequent_classification = classification_count.iloc[0]  # Get the top row
+                st.write(f"The most frequent classification is **'{most_frequent_classification['Classification']}'** "
+                f"with **{most_frequent_classification['Count']}** occurrences.")
+
+                # Optional: Display the full classification count table
+                st.write("Classification Distribution:")
+                st.dataframe(classification_count)
+            else:
+                st.warning("Column 'Classification' not found in the dataset.")
+
+
             # Frequent Words in Evident_data for False
             #if 'Evident_data' in df_false.columns:
                 #st.subheader("Frequent Words in Evident_data (False)")
