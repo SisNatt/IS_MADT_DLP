@@ -472,11 +472,30 @@ elif selected == "Anomaly Detection":
                     st.warning("No matching users found for the detected anomalies.")
                 else:
                     st.write("Details of Users with Anomalies:")
-                    st.dataframe(anomalous_users)
+                    st.dataframe(
+                        anomalous_users.drop(columns=['Incident ID'])  # Exclude 'Incident ID' column from the display
+                    )
+
+                    # Step 5: Top 10 Anomalous Users Visualization
+                    st.subheader("Top 10 Anomalous Users by Incident Count")
+                    top_anomalous_users = anomalous_users.groupby('Event User')['Incident Count'].max().reset_index()
+                    top_anomalous_users = top_anomalous_users.sort_values(by='Incident Count', ascending=False).head(10)
+
+                    # Visualization for Top 10 Anomalous Users
+                    top_users_fig = px.bar(
+                        top_anomalous_users,
+                        x='Event User',
+                        y='Incident Count',
+                        color='Incident Count',
+                        title="Top 10 Anomalous Users by Incident Count",
+                        labels={'Incident Count': 'Incident Count', 'Event User': 'Event User'}
+                    )
+                    st.plotly_chart(top_users_fig)
 
         except Exception as e:
             st.error(f"Error analyzing anomalies: {e}")
     else:
         st.warning("No processed file found. Please identify incidents first.")
+
 
 
