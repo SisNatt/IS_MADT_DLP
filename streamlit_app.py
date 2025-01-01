@@ -222,7 +222,7 @@ elif selected == "Pattern Mining":
 
 # Page 5: User Behavior Analysis
 elif selected == "User Behavior Analysis":
-    st.title("\ud83d\udcca User Behavior Analysis")
+    st.title("📈 User Behavior Analysis")
 
     if 'processed_file' in st.session_state:
         try:
