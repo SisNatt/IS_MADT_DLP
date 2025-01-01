@@ -241,6 +241,57 @@ elif selected == "Pattern Mining":
                 labels={'Incident Type': 'Incident Type', 'Count': 'Number of Incidents'}
             )
             st.plotly_chart(fig_top_types
+            )
+
+            # Severity and Incident Type Heatmap
+            st.write("**Severity vs Incident Type Heatmap**")
+            heatmap_data = df_processed.groupby(['Severity', 'Incident Type']).size().reset_index(name='Count')
+            fig_heatmap = px.density_heatmap(
+                heatmap_data,
+                x='Incident Type',
+                y='Severity',
+                z='Count',
+                title="Heatmap of Severity vs Incident Type",
+                labels={'Incident Type': 'Incident Type', 'Severity': 'Severity', 'Count': 'Number of Incidents'}
+            )
+            st.plotly_chart(fig_heatmap)
+
+            # Rule Impact Analysis
+            if 'Rule Set' in df_processed.columns:
+                st.write("**Rule Impact Analysis**")
+                rule_impact = df_processed['Rule Set'].value_counts().head(10).reset_index()
+                rule_impact.columns = ['Rule Set', 'Count']
+                fig_rule_impact = px.bar(
+                    rule_impact,
+                    x='Rule Set',
+                    y='Count',
+                    color='Count',
+                    title="Top 10 Rules Triggering Incidents",
+                    labels={'Rule Set': 'Rule Set', 'Count': 'Number of Incidents'}
+                )
+                st.plotly_chart(fig_rule_impact)
+
+            # Incident Duration Analysis
+            st.write("**Incident Duration Analysis**")
+            if 'Time' in df_processed.columns:
+                df_processed['Duration'] = pd.to_numeric(df_processed['Time'], errors='coerce')
+                duration_stats = df_processed['Duration'].describe()
+                st.write(f"Incident Duration Statistics:")
+                st.write(duration_stats)
+
+                fig_duration = px.histogram(
+                    df_processed,
+                    x='Duration',
+                    nbins=20,
+                    title="Incident Duration Distribution",
+                    labels={'Duration': 'Duration (seconds)'}
+                )
+                st.plotly_chart(fig_duration)
+
+        except Exception as e:
+            st.error(f"Error during pattern mining: {e}")
+    else:
+        st.warning("No processed file found. Please identify incidents first.")
 
 # Page 5: User Behavior Analysis
 elif selected == "User Behavior Analysis":
