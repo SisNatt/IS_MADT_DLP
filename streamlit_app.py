@@ -187,29 +187,31 @@ elif selected == "Pattern Mining":
                 st.write("Frequent Itemsets:")
                 st.dataframe(frequent_itemsets)
                 
-                # Step 3: Generate Association Rules
+               # Step 3: Generate Association Rules
                 st.subheader("Step 3: Generate Association Rules")
                 min_confidence = st.slider("Select Minimum Confidence", 0.1, 1.0, 0.5, step=0.1)
-                rules = association_rules(frequent_itemsets, metric="confidence", min_threshold=min_confidence)
-                
-                if not rules.empty:
-                    st.write("Association Rules:")
-                    st.dataframe(rules)
-                    
-                    fig = px.scatter(
-                        rules,
-                        x="support",
-                        y="confidence",
-                        size="lift",
-                        color="antecedents",
-                        title="Support vs Confidence",
-                        labels={"antecedents": "Antecedent Patterns"}
-                    )
-                    st.plotly_chart(fig)
-                else:
-                    st.warning("No association rules found. Try reducing the minimum confidence value.")
-            else:
-                st.warning("No frequent itemsets found. Try reducing the minimum support value.")
+                rules = association_rules(
+                    frequent_itemsets, 
+                    metric="confidence", 
+                    min_threshold=min_confidence
+                )
+
+            if not rules.empty:
+                st.write("Association Rules:")
+                st.dataframe(rules)
+
+                fig = px.scatter(
+                    rules,
+                    x="support",
+                    y="confidence",
+                    size="lift",
+                    color="antecedents",
+                    title="Support vs Confidence",
+                    labels={"antecedents": "Antecedent Patterns"}
+                )
+                st.plotly_chart(fig)
+        else:
+            st.warning("No association rules found. Try reducing the minimum confidence value.")
 
             # Additional Analysis for Incident Trends
             st.subheader("Step 4: Incident Trends and Patterns")
