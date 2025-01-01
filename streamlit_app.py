@@ -22,7 +22,7 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 selected = option_menu(
     "Main Menu", 
     ["Home - Raw Data", "View Processed Data", "Pattern Mining", "User Behavior Analysis", "Anomaly Detection"], 
-    icons=['house', 'bar-chart', 'diagram-3', 'person', 'Siren' ], 
+    icons=['house', 'bar-chart', 'diagram-3', 'person', 'bell-exclamation' ], 
     menu_icon="cast", 
     default_index=0
 )
@@ -407,7 +407,7 @@ elif selected == "Anomaly Detection":
                 st.error(f"Missing required columns: {', '.join(missing_columns)}")
                 st.stop()
 
-            # Step 1: Prepare Data for Anomaly Detection
+            # Step 1: Data Preparation for Anomaly Detection
             st.subheader("Step 1: Data Preparation")
 
             # Create new features
@@ -417,18 +417,19 @@ elif selected == "Anomaly Detection":
             df_processed['Severity Numeric'] = df_processed['Severity'].map(severity_mapping).fillna(0)
 
             # Prepare data for modeling
-            anomaly_features = df_processed[['Incident Count', 'Unique Incident Types', 'Severity Numeric']].drop_duplicates()
+            anomaly_features = df_processed[['Event User', 'Incident Count', 'Unique Incident Types', 'Severity Numeric']].drop_duplicates()
+            st.write("Prepared Data for Anomaly Detection:")
             st.dataframe(anomaly_features)
 
             # Step 2: Apply Isolation Forest for Anomaly Detection
             st.subheader("Step 2: Anomaly Detection Using Isolation Forest")
 
             from sklearn.ensemble import IsolationForest
+            from sklearn.preprocessing import StandardScaler
             
             # Normalize the features
-            from sklearn.preprocessing import StandardScaler
             scaler = StandardScaler()
-            scaled_features = scaler.fit_transform(anomaly_features)
+            scaled_features = scaler.fit_transform(anomaly_features[['Incident Count', 'Unique Incident Types', 'Severity Numeric']])
 
             # Train Isolation Forest
             isolation_forest = IsolationForest(contamination=0.05, random_state=42)
@@ -455,17 +456,23 @@ elif selected == "Anomaly Detection":
             )
             st.plotly_chart(fig)
 
-            # Step 4: Analyze Anomalous Users or Incidents
+            # Step 4: Analyze Anomalous Data
             st.subheader("Step 4: Analysis of Anomalous Data")
 
             anomalous_data = anomaly_features[anomaly_features['Anomaly'] == 'Anomaly']
-            st.write("Anomalous Data Summary:")
-            st.dataframe(anomalous_data)
+            if anomalous_data.empty:
+                st.warning("No anomalies detected. Try adjusting the contamination parameter.")
+            else:
+                st.write("Anomalous Data Summary:")
+                st.dataframe(anomalous_data)
 
-            # Identify associated users and incidents
-            anomalous_users = df_processed[df_processed['Event User'].isin(anomalous_data.index)]
-            st.write("Details of Users with Anomalies:")
-            st.dataframe(anomalous_users)
+                # Identify associated users and incidents
+                anomalous_users = df_processed[df_processed['Event User'].isin(anomalous_data['Event User'])]
+                if anomalous_users.empty:
+                    st.warning("No matching users found for the detected anomalies.")
+                else:
+                    st.write("Details of Users with Anomalies:")
+                    st.dataframe(anomalous_users)
 
         except Exception as e:
             st.error(f"Error analyzing anomalies: {e}")
