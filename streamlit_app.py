@@ -162,10 +162,11 @@ elif selected == "View Processed Data":
 
 # Pattern Mining section
 elif selected == "Pattern Mining":
-    st.title("🔍 Pattern Mining for Incidents")
+    st.title(🔍 Pattern Mining for Incidents")
 
     if 'processed_file' in st.session_state:
         try:
+            # Load processed file
             processed_file = st.session_state['processed_file']
             df_processed = pd.read_csv(processed_file, encoding='utf-8-sig')
 
@@ -176,10 +177,12 @@ elif selected == "Pattern Mining":
             # Step 1: Incident Trends and Patterns
             st.subheader("Step 1: Incident Trends and Patterns")
 
+            # Convert 'Occurred (UTC)' to datetime format
+            df_processed['Occurred (UTC)'] = pd.to_datetime(df_processed['Occurred (UTC)'])
+
             # Monthly Trend Analysis
             st.write("**Monthly Incident Distribution**")
-            df_processed['Occurred (UTC)'] = pd.to_datetime(df_processed['Occurred (UTC)'])
-            df_processed['Month'] = df_processed['Occurred (UTC)'].dt.to_period('M')
+            df_processed['Month'] = df_processed['Occurred (UTC)'].dt.to_period('M').astype(str)  # Convert Period to string
             monthly_trends = df_processed.groupby('Month').size().reset_index(name='Incident Count')
             fig_trend = px.line(
                 monthly_trends,
@@ -253,7 +256,6 @@ elif selected == "Pattern Mining":
             st.error(f"Error during pattern mining: {e}")
     else:
         st.warning("No processed file found. Please identify incidents first.")
-
 
 # Page 5: User Behavior Analysis
 elif selected == "User Behavior Analysis":
