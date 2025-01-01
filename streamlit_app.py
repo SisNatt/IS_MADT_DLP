@@ -162,7 +162,7 @@ elif selected == "View Processed Data":
 
 # Pattern Mining section
 elif selected == "Pattern Mining":
-    st.title("🔍 Pattern Mining for Incidents")
+    st.title("\U0001F50D Pattern Mining for Incidents")
 
     if 'processed_file' in st.session_state:
         try:
@@ -180,32 +180,18 @@ elif selected == "Pattern Mining":
             # Convert 'Occurred (UTC)' to datetime format
             df_processed['Occurred (UTC)'] = pd.to_datetime(df_processed['Occurred (UTC)'])
 
-            # Monthly Trend Analysis
-            st.write("**Monthly Incident Distribution**")
-            df_processed['Month'] = df_processed['Occurred (UTC)'].dt.to_period('M').astype(str)  # Convert Period to string
-            monthly_trends = df_processed.groupby('Month').size().reset_index(name='Incident Count')
+            # Weekly Trend Analysis
+            st.write("**Weekly Incident Distribution**")
+            df_processed['Week'] = df_processed['Occurred (UTC)'].dt.to_period('W').astype(str)  # Convert Period to string
+            weekly_trends = df_processed.groupby('Week').size().reset_index(name='Incident Count')
             fig_trend = px.line(
-                monthly_trends,
-                x='Month',
+                weekly_trends,
+                x='Week',
                 y='Incident Count',
-                title="Monthly Trend of Incidents",
-                labels={'Month': 'Month', 'Incident Count': 'Number of Incidents'}
+                title="Weekly Trend of Incidents",
+                labels={'Week': 'Week', 'Incident Count': 'Number of Incidents'}
             )
             st.plotly_chart(fig_trend)
-
-            # Top Incident Types
-            st.write("**Top Incident Types**")
-            top_incident_types = df_processed['Incident Type'].value_counts().head(10).reset_index()
-            top_incident_types.columns = ['Incident Type', 'Count']
-            fig_top_types = px.bar(
-                top_incident_types,
-                x='Incident Type',
-                y='Count',
-                color='Count',
-                title="Top 10 Incident Types",
-                labels={'Incident Type': 'Incident Type', 'Count': 'Number of Incidents'}
-            )
-            st.plotly_chart(fig_top_types)
 
             # Severity and Incident Type Heatmap
             st.write("**Severity vs Incident Type Heatmap**")
@@ -220,42 +206,11 @@ elif selected == "Pattern Mining":
             )
             st.plotly_chart(fig_heatmap)
 
-            # Rule Impact Analysis
-            if 'Rule Set' in df_processed.columns:
-                st.write("**Rule Impact Analysis**")
-                rule_impact = df_processed['Rule Set'].value_counts().head(10).reset_index()
-                rule_impact.columns = ['Rule Set', 'Count']
-                fig_rule_impact = px.bar(
-                    rule_impact,
-                    x='Rule Set',
-                    y='Count',
-                    color='Count',
-                    title="Top 10 Rules Triggering Incidents",
-                    labels={'Rule Set': 'Rule Set', 'Count': 'Number of Incidents'}
-                )
-                st.plotly_chart(fig_rule_impact)
-
-            # Incident Duration Analysis
-            st.write("**Incident Duration Analysis**")
-            if 'Time' in df_processed.columns:
-                df_processed['Duration'] = pd.to_numeric(df_processed['Time'], errors='coerce')
-                duration_stats = df_processed['Duration'].describe()
-                st.write(f"Incident Duration Statistics:")
-                st.write(duration_stats)
-
-                fig_duration = px.histogram(
-                    df_processed,
-                    x='Duration',
-                    nbins=20,
-                    title="Incident Duration Distribution",
-                    labels={'Duration': 'Duration (seconds)'}
-                )
-                st.plotly_chart(fig_duration)
-
         except Exception as e:
             st.error(f"Error during pattern mining: {e}")
     else:
         st.warning("No processed file found. Please identify incidents first.")
+
 
 # Page 5: User Behavior Analysis
 elif selected == "User Behavior Analysis":
