@@ -218,35 +218,6 @@ elif selected == "User Behavior Analysis":
             processed_file = st.session_state['processed_file']
             df_processed = pd.read_csv(processed_file, encoding='utf-8-sig')
 
-            # Existing Analysis: Analyze False Positive and Negative Cases
-            st.subheader("Analyze False Positive and Negative Cases")
-            false_cases = df_processed[df_processed['Match_Label'] == False]
-            st.write(f"Total False Cases: {len(false_cases)}")
-
-            # Severity distribution
-            if 'Severity' in false_cases.columns:
-                severity_count = false_cases['Severity'].value_counts().reset_index()
-                severity_count.columns = ['Severity', 'Count']
-                fig = px.bar(severity_count, x='Severity', y='Count', title="Severity Distribution in False Cases")
-                st.plotly_chart(fig)
-
-            # Frequent words in 'Evident_data'
-            if 'Evident_data' in false_cases.columns:
-                evident_words = false_cases['Evident_data'].dropna().str.split().sum()
-                word_counts = Counter(evident_words).most_common(10)
-                word_df = pd.DataFrame(word_counts, columns=['Word', 'Count'])
-                st.write("Frequent Words in False Cases:")
-                st.dataframe(word_df)
-                word_fig = px.bar(word_df, x='Word', y='Count', title="Frequent Words in Evident_data")
-                st.plotly_chart(word_fig)
-
-            st.subheader("Policy Recommendations")
-            recommendations = false_cases.groupby('Incident Type').size().reset_index(name='False Count')
-            recommendations['Recommendation'] = recommendations['Incident Type'].apply(
-                lambda x: f"Adjust rules for '{x}' to reduce False Cases"
-            )
-            st.dataframe(recommendations)
-
             # Added Analysis: User Behavior Profile and Clustering
             # Step 1: User Behavior Profile
             st.subheader("Step 1: User Behavior Profile")
