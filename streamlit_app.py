@@ -250,3 +250,49 @@ elif selected == "User Behavior Analysis":
             st.error(f"Error analyzing user behavior: {e}")
     else:
         st.warning("No processed file found. Please identify incidents first.")
+
+# Anomaly Detection
+elif selected == "Anomaly Detection":
+    st.title("🚨 Anomaly Detection")
+
+    if 'processed_file' in st.session_state:
+        try:
+            processed_file = st.session_state['processed_file']
+            df_processed = pd.read_csv(processed_file, encoding='utf-8-sig')
+
+            st.subheader("Step 1: Data Preparation for Anomaly Detection")
+            df_processed['Incident Count'] = df_processed.groupby('Event User')['Event User'].transform('count')
+            df_processed['Unique Incident Types'] = df_processed.groupby('Event User')['Incident Type'].transform('nunique')
+            severity_mapping = {'Low': 1, 'Medium': 2, 'High': 3, 'Critical': 4}
+            df_processed['Severity Numeric'] = df_processed['Severity'].map(severity_mapping).fillna(0)
+
+            anomaly_features = df_processed[['Event User', 'Incident Count', 'Unique Incident Types', 'Severity Numeric']].drop_duplicates()
+            st.write("Prepared Data for Anomaly Detection:")
+            st.dataframe(anomaly_features)
+
+            st.subheader("Step 2: Applying Isolation Forest")
+            scaler = StandardScaler()
+            scaled_features = scaler.fit_transform(anomaly_features[['Incident Count', 'Unique Incident Types', 'Severity Numeric']])
+
+            isolation_forest = IsolationForest(contamination=0.05, random_state=42)
+            anomaly_features['Anomaly'] = isolation_forest.fit_predict(scaled_features)
+
+            anomaly_features['Anomaly'] = anomaly_features['Anomaly'].apply(lambda x: 'Anomaly' if x == -1 else 'Normal')
+            st.write("Anomaly Detection Results:")
+            st.dataframe(anomaly_features)
+
+            st.subheader("Step 3: Visualizing Anomalies")
+            fig = px.scatter(
+                anomaly_features,
+                x='Incident Count',
+                y='Severity Numeric',
+                color='Anomaly',
+                title="Anomaly Detection Visualization",
+                labels={'Incident Count': 'Incident Count', 'Severity Numeric': 'Severity (Numeric)'}
+            )
+            st.plotly_chart(fig)
+
+        except Exception as e:
+            st.error(f"Error during anomaly detection: {e}")
+    else:
+        st.warning("No processed file found. Please identify incidents first.")
