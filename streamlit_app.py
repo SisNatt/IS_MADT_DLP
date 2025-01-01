@@ -277,15 +277,15 @@ elif selected == "User Behavior Analysis":
                 #word_df = pd.DataFrame(word_counts, columns=['Word', 'Count'])
 
                 # Display frequent words
-                st.dataframe(word_df)
-                word_fig = px.bar(
-                    word_df,
-                    x='Word',
-                    y='Count',
-                    color='Count',
-                    title="Top Words in Evident_data for False Match_Label"
-                )
-                st.plotly_chart(word_fig)
+                #st.dataframe(word_df)
+                #word_fig = px.bar(
+                    #word_df,
+                    #x='Word',
+                    #y='Count',
+                    #color='Count',
+                    #title="Top Words in Evident_data for False Match_Label"
+                #)
+                #st.plotly_chart(word_fig)
 
             # Clustering Analysis
             st.subheader("Clustering Incident Data")
