@@ -162,7 +162,7 @@ elif selected == "View Processed Data":
 
 # Pattern Mining section
 elif selected == "Pattern Mining":
-    st.title(🔍 Pattern Mining for Incidents")
+    st.title("🔍 Pattern Mining for Incidents")
 
     if 'processed_file' in st.session_state:
         try:
