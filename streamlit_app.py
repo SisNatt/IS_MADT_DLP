@@ -222,7 +222,7 @@ elif selected == "Pattern Mining":
 
 # Page 5: User Behavior Analysis
 elif selected == "User Behavior Analysis":
-    st.title("📈 User Behavior Analysis")
+    st.title("\ud83d\udcca User Behavior Analysis")
 
     if 'processed_file' in st.session_state:
         try:
@@ -333,78 +333,7 @@ elif selected == "User Behavior Analysis":
                 )
                 st.plotly_chart(word_fig)
 
-    if 'processed_file' in st.session_state:
-        try:
-            # Load the processed file
-            processed_file = st.session_state['processed_file']
-            df_processed = pd.read_csv(processed_file, encoding='utf-8-sig')
-
-            # Check for necessary columns
-            required_columns = ['Event User', 'Incident Type', 'Severity', 'Occurred (UTC)', 'Destination', 'Match_Label', 'Classification', 'Rule Set']
-            missing_columns = [col for col in required_columns if col not in df_processed.columns]
-            if missing_columns:
-                st.error(f"Missing required columns: {', '.join(missing_columns)}")
-                st.stop()
-
-            # Step 3: Focus on Match_Label = False
-            st.subheader("Step 3: Focus on Match_Label = False")
-            df_processed['Match_Label'] = df_processed['Match_Label'].apply(
-                lambda x: True if str(x).strip().lower() == 'true' else False
-            )
-            df_false = df_processed[df_processed['Match_Label'] == False]
-            st.write(f"Total False records: {len(df_false)}")
-
-            # Display False data
-            with st.expander("View False Data", expanded=True):
-                st.dataframe(df_false)
-
-            # Split and Explode Classification and Rule Set
-            if 'Classification' in df_false.columns and 'Rule Set' in df_false.columns:
-                st.subheader("Detailed Analysis: Classification and Rule Set")
-
-                # Split Classification and Rule Set into lists
-                df_false['Classification_List'] = df_false['Classification'].str.split(',')
-                df_false['Rule_Set_List'] = df_false['Rule Set'].str.split(',')
-
-                # Explode to create individual rows for each Classification and Rule Set
-                exploded_df = df_false.explode('Classification_List').explode('Rule_Set_List')
-
-                # Remove Incident ID from display
-                exploded_df = exploded_df[['Classification_List', 'Rule_Set_List', 'Severity']]
-                exploded_df.columns = ['Classification', 'Rule Set', 'Severity']
-
-                # Drop duplicate combinations
-                exploded_df = exploded_df.drop_duplicates()
-
-                # Display detailed exploded data (expanded by default)
-                with st.expander("View Exploded Data", expanded=True):
-                    st.dataframe(exploded_df)
-
-                # Summarize data
-                st.subheader("Summary: Classification and Severity Distribution")
-                classification_summary = exploded_df.groupby(['Classification', 'Severity']).size().reset_index(name='Count')
-
-                # Display summary data
-                st.write("Summary of Classification and Severity Distribution:")
-                st.dataframe(classification_summary)
-
-            else:
-                st.warning("Columns 'Classification' or 'Rule Set' not found in the dataset.")
-
-    if 'processed_file' in st.session_state:
-        try:
-            # Load the processed file
-            processed_file = st.session_state['processed_file']
-            df_processed = pd.read_csv(processed_file, encoding='utf-8-sig')
-
-            # Check for necessary columns
-            required_columns = ['Event User', 'Incident Type', 'Severity', 'Occurred (UTC)', 'Match_Label', 'Classification', 'Rule Set']
-            missing_columns = [col for col in required_columns if col not in df_processed.columns]
-            if missing_columns:
-                st.error(f"Missing required columns: {', '.join(missing_columns)}")
-                st.stop()
-
-            # Step 1: Prepare Data for Clustering
+            # Clustering Analysis
             st.subheader("Clustering Incident Data")
             cluster_data = df_processed[['Event User', 'Incident Type', 'Severity', 'Occurred (UTC)']].copy()
 
