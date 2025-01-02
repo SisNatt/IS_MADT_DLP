@@ -491,6 +491,9 @@ elif selected == "Anomaly Detection":
                 'Unique Incident Types': ['mean', 'max', 'min'],
                 'Severity Numeric': ['mean', 'max', 'min']
             })
+            st.write("### Debug: Check anomaly_features DataFrame")
+            st.dataframe(anomaly_features)
+
 
             # Flatten MultiIndex columns for easier use
             anomaly_summary.columns = [' '.join(col).strip() for col in anomaly_summary.columns]
