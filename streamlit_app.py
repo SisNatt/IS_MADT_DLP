@@ -24,7 +24,7 @@ with st.sidebar:
     selected = option_menu(
         "Main Menu",
         ["Home - Raw Data", "View Processed Data", "Pattern Mining", "User Behavior Analysis", "Anomaly Detection"],
-        icons=['house', 'bar-chart', 'diagram-3', 'person', 'bell-exclamation'],
+        icons=['house', 'bar-chart', 'diagram-3', 'person', 'exclamation-triangle'],
         menu_icon="cast",
         default_index=0,
         orientation="vertical"  # Ensures the menu stays vertical
