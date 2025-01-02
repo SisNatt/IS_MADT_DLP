@@ -481,6 +481,9 @@ elif selected == "Anomaly Detection":
                 labels={'Incident Count': 'Incident Count', 'Severity Numeric': 'Severity (Numeric)'}
             )
             st.plotly_chart(fig)
+               
+            st.write("### Summary Statistics for Anomaly and Normal Groups")
+            st.table(anomaly_summary)
 
             # Step 4: Displaying Dynamic Analysis Results
             st.subheader("Step 4: Additional Analysis - Summary of Anomalies and Normal Data")
@@ -500,8 +503,7 @@ elif selected == "Anomaly Detection":
             anomaly_summary = anomaly_summary.reset_index()
 
             # Create a dynamic table
-            st.write("### Summary Statistics for Anomaly and Normal Groups")
-            st.table(anomaly_summary)
+         
 
             # Count of records for each group
             anomaly_counts = anomaly_features['Anomaly'].value_counts()
