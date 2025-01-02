@@ -106,6 +106,19 @@ elif selected == "View Processed Data":
             with st.expander("View Processed Data"):
                 st.dataframe(df_processed)
 
+             # เพิ่มส่วนดาวน์โหลดรายงาน
+            st.subheader("Download Actionable Report")
+            output_file_path = os.path.join(OUTPUT_DIR, "DLP_Insights_Report.csv")
+            df_processed.to_csv(output_file_path, index=False, encoding='utf-8-sig')
+
+            with open(output_file_path, "rb") as file:
+                btn = st.download_button(
+                    label="Download Report",
+                    data=file,
+                    file_name="DLP_Insights_Report.csv",
+                    mime="text/csv"
+                )
+
             # Check if Match_Label exists
             if 'Match_Label' in df_processed.columns:
                 st.subheader("Filter by Match_Label")
