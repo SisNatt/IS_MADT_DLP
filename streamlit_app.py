@@ -21,6 +21,10 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 # Main Menu
 with st.sidebar:
+    st.title("DLP Analyst Assistant")
+    st.write("""
+        **DLP Analyst Assistant** is designed to streamline repetitive tasks for analysis teams, enabling faster insights and efficient policy improvements.
+    """)
     selected = option_menu(
         "Main Menu",
         ["Home - Raw Data", "View Processed Data", "Pattern Mining", "User Behavior Analysis", "Anomaly Detection"],
@@ -32,7 +36,10 @@ with st.sidebar:
 
 # Page 1: Home - Raw Data
 if selected == "Home - Raw Data":
-    st.title("👮‍♀️👾 Data Loss Prevention reported by ML 🤖")
+    st.title("🛠️ DLP Analyst Assistant")
+    st.write("""
+        Welcome to DLP Analyst Assistant, a helpful tool designed for analyst teams
+    """)
     st.subheader("Raw Data Overview")
 
     try:
