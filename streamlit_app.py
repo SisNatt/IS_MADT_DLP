@@ -480,6 +480,44 @@ elif selected == "Anomaly Detection":
                 labels={'Incident Count': 'Incident Count', 'Severity Numeric': 'Severity (Numeric)'}
             )
             st.plotly_chart(fig)
+            # Step 4: Displaying Dynamic Analysis Results
+            st.subheader("Step 4: Additional Analysis - Summary of Anomalies and Normal Data")
+
+            # Dynamically calculate and display the anomaly and normal group statistics
+            anomaly_summary = df.groupby('Anomaly').agg({
+                'Incident Count': ['mean', 'max', 'min'],
+                'Unique Incident Types': ['mean', 'max', 'min'],
+                'Severity Numeric': ['mean', 'max', 'min']
+            })
+
+        # Flatten MultiIndex columns for easier use
+        anomaly_summary.columns = [' '.join(col).strip() for col in anomaly_summary.columns]
+        anomaly_summary = anomaly_summary.reset_index()
+
+        # Create a dynamic table
+        st.write("### Summary Statistics for Anomaly and Normal Groups")
+        st.table(anomaly_summary)
+
+        # Count of records for each group
+        anomaly_counts = df['Anomaly'].value_counts()
+        st.write("### Count of Anomalies and Normal Records")
+        st.write(f"- **Normal**: {anomaly_counts.get('Normal', 0)} records")
+        st.write(f"- **Anomalies**: {anomaly_counts.get('Anomaly', 0)} records")
+
+        # Explain findings and recommendations based on dynamic data
+        st.write("### Findings and Recommendations")
+        st.write(f"""
+        1. **Incident Count**:
+           - Anomalies have a mean of {anomaly_summary.loc[anomaly_summary['Anomaly'] == 'Anomaly', 'Incident Count mean'].values[0]:.2f}.
+           - Normal records have a mean of {anomaly_summary.loc[anomaly_summary['Anomaly'] == 'Normal', 'Incident Count mean'].values[0]:.2f}.
+        2. **Severity Numeric**:
+           - Anomalies have a mean Severity of {anomaly_summary.loc[anomaly_summary['Anomaly'] == 'Anomaly', 'Severity Numeric mean'].values[0]:.2f}.
+           - Normal records have a mean Severity of {anomaly_summary.loc[anomaly_summary['Anomaly'] == 'Normal', 'Severity Numeric mean'].values[0]:.2f}.
+        3. **Recommendations**:
+           - Review high Incident Count anomalies with low Severity Numeric for potential false positives or unusual behavior.
+           - Add more contextual features to improve the quality of anomaly detection.
+        """)
+
 
         except Exception as e:
             st.error(f"Error during anomaly detection: {e}")
