@@ -205,30 +205,31 @@ elif selected == "Pattern Mining":
             # Weekly Trend Analysis
             df_processed['Week'] = df_processed['Occurred (UTC)'].dt.to_period('W').astype(str)
             weekly_trends = df_processed.groupby(['Week', 'Severity']).size().reset_index(name='Incident Count')
+            overall_weekly_trends = weekly_trends.groupby('Week')['Incident Count'].sum().reset_index()
 
-            # Weekly Incidents Comparison Chart
-            st.subheader("Weekly Incidents Comparison by Severity")
-            fig_weekly_comparison = px.bar(
+            # Combined Weekly Incident Chart
+            st.subheader("Combined Weekly Incidents and Trend")
+            fig_combined = px.bar(
                 weekly_trends,
                 x='Week',
                 y='Incident Count',
                 color='Severity',
-                title="Weekly Incident Counts by Severity",
+                title="Weekly Incidents by Severity with Overall Trend",
                 labels={'Week': 'Week', 'Incident Count': 'Number of Incidents', 'Severity': 'Severity'},
-                barmode='group'
+                barmode='stack'
             )
-            st.plotly_chart(fig_weekly_comparison)
 
-            # Weekly Trend Analysis (Overall)
-            overall_weekly_trends = weekly_trends.groupby('Week')['Incident Count'].sum().reset_index()
-            fig_trend = px.line(
-                overall_weekly_trends,
-                x='Week',
-                y='Incident Count',
-                title="Weekly Trend of Incidents (Overall)",
-                labels={'Week': 'Week', 'Incident Count': 'Number of Incidents'}
+            # Add overall trend line to the combined chart
+            fig_combined.add_scatter(
+                x=overall_weekly_trends['Week'],
+                y=overall_weekly_trends['Incident Count'],
+                mode='lines+markers',
+                name='Overall Trend',
+                line=dict(color='black', width=2)
             )
-            st.plotly_chart(fig_trend)
+
+            # Show combined chart
+            st.plotly_chart(fig_combined)
 
             # Analysis for Weekly Trends
             st.subheader("Analysis of Weekly Trends")
