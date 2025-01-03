@@ -270,6 +270,9 @@ elif selected == "Pattern Mining":
                 # Generate Frequent Itemsets
                 frequent_itemsets = apriori(df_te, min_support=0.05, use_colnames=True)
 
+                import mlxtend
+                st.write(f"mlxtend version: {mlxtend.__version__}")
+
                 # Generate Association Rules
                 if not frequent_itemsets.empty:
                     rules = association_rules(frequent_itemsets, metric="confidence", min_threshold=0.6)
