@@ -62,14 +62,39 @@ if selected == "Home - Raw Data":
         df_raw = pd.read_csv(INCIDENT_FILE, encoding='utf-8-sig')
         st.write(f"Total records: {len(df_raw)}")
 
-        # Display raw data in expander
-        with st.expander("View Raw Data"):
-            st.dataframe(df_raw)
+        # Process 2: Data Preprocessing (New Method)
+        st.subheader("Step 1: Data Preprocessing (New Method)")
+        if st.button("Preprocess Data"):
+            try:
+                # Preprocess raw data
+                df_raw.fillna('Unknown', inplace=True)
+                if 'Occurred (UTC)' in df_raw.columns:
+                    df_raw['Occurred (UTC)'] = pd.to_datetime(df_raw['Occurred (UTC)'])
+                le = LabelEncoder()
+                for col in ['Severity', 'Incident Type', 'Event User']:
+                    if col in df_raw.columns:
+                        df_raw[col] = le.fit_transform(df_raw[col])
 
-        # Existing Functionality: Process Incidents
-        st.subheader("Step 1: Process Incidents")
+                # Display preprocessed data
+                st.write("Preprocessed Data:")
+                st.dataframe(df_raw)
+
+                # Save preprocessed data for further analysis
+                preprocessed_file = os.path.join(OUTPUT_DIR, "preprocessed_data.csv")
+                df_raw.to_csv(preprocessed_file, index=False, encoding='utf-8-sig')
+                st.session_state['preprocessed_file'] = preprocessed_file
+                st.success("Data preprocessing completed. File saved.")
+            except Exception as e:
+                st.error(f"Error preprocessing raw data: {e}")
+
+        # Process 1: Process Incidents (Existing Method)
+        st.subheader("Step 2: Process Incidents")
         if st.button("Process Incidents (Existing Method)"):
             try:
+                # Load preprocessed data
+                if 'preprocessed_file' in st.session_state:
+                    df_raw = pd.read_csv(st.session_state['preprocessed_file'], encoding='utf-8-sig')
+
                 # Load dictionary
                 df_dictionary = pd.read_csv(DICTIONARY_FILE, encoding='utf-8-sig')
 
@@ -104,31 +129,6 @@ if selected == "Home - Raw Data":
                 st.success(f"Processed file saved as '{output_file}'")
             except Exception as e:
                 st.error(f"Error processing incidents: {e}")
-
-        # New Functionality: Data Preprocessing
-        st.subheader("Step 2: Data Preprocessing (New Method)")
-        if st.button("Preprocess Data"):
-            try:
-                # Preprocess raw data
-                df_raw.fillna('Unknown', inplace=True)
-                if 'Occurred (UTC)' in df_raw.columns:
-                    df_raw['Occurred (UTC)'] = pd.to_datetime(df_raw['Occurred (UTC)'])
-                le = LabelEncoder()
-                for col in ['Severity', 'Incident Type', 'Event User']:
-                    if col in df_raw.columns:
-                        df_raw[col] = le.fit_transform(df_raw[col])
-
-                # Display preprocessed data
-                st.write("Preprocessed Data:")
-                st.dataframe(df_raw)
-
-                # Save preprocessed data for further analysis
-                preprocessed_file = os.path.join(OUTPUT_DIR, "preprocessed_data.csv")
-                df_raw.to_csv(preprocessed_file, index=False, encoding='utf-8-sig')
-                st.session_state['preprocessed_file'] = preprocessed_file
-                st.success("Data preprocessing completed. File saved.")
-            except Exception as e:
-                st.error(f"Error preprocessing raw data: {e}")
 
     except Exception as e:
         st.error(f"Error loading raw data: {e}")
