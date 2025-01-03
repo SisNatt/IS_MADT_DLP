@@ -250,62 +250,6 @@ elif selected == "Pattern Mining":
                 labels={'Incident Type': 'Incident Type', 'Severity': 'Severity', 'Count': 'Number of Incidents'}
             )
             st.plotly_chart(fig_heatmap)
-
-            # Frequent Pattern Mining Section
-            st.subheader("Frequent Pattern Mining")
-
-            # Prepare data for Frequent Pattern Mining
-            transaction_data = df_processed.groupby('Event User')['Incident Type'].apply(list)
-
-            try:
-                # Import required libraries
-                from mlxtend.preprocessing import TransactionEncoder
-                from mlxtend.frequent_patterns import apriori, association_rules
-
-                # Apply TransactionEncoder
-                te = TransactionEncoder()
-                te_ary = te.fit(transaction_data).transform(transaction_data)
-                df_te = pd.DataFrame(te_ary, columns=te.columns_)
-
-                # Generate Frequent Itemsets
-                frequent_itemsets = apriori(df_te, min_support=0.05, use_colnames=True)
-
-                # Debug: Show Frequent Itemsets
-                st.write("### Frequent Itemsets")
-                st.dataframe(frequent_itemsets)
-
-                # Generate Association Rules
-                if not frequent_itemsets.empty:
-                    frequent_itemsets['num_itemsets'] = len(frequent_itemsets)  # Add num_itemsets for compatibility
-                    rules = association_rules(frequent_itemsets, metric="confidence", min_threshold=0.6)
-
-                    # Display Association Rules
-                    st.write("### Association Rules")
-                    st.dataframe(rules)
-
-                    # Visualize Association Rules
-                    fig_rules = px.scatter(
-                        rules,
-                        x='confidence',
-                        y='lift',
-                        size='support',
-                        color=rules['antecedents'].apply(lambda x: ', '.join(list(x))),
-                        title="Association Rules Visualization",
-                        labels={'confidence': 'Confidence', 'lift': 'Lift', 'support': 'Support'}
-                    )
-                    st.plotly_chart(fig_rules)
-                else:
-                    st.warning("No frequent itemsets found. Try reducing the `min_support` threshold.")
-
-            except Exception as e:
-                st.error(f"Error in Frequent Pattern Mining: {e}")
-                import traceback
-                st.error(traceback.format_exc())
-
-        except Exception as e:
-            st.error(f"Error during pattern mining: {e}")
-    else:
-        st.warning("No processed file found. Please identify incidents first.")
         
             # Recommendations Section
             st.subheader("Recommendations")
