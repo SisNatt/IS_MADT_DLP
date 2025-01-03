@@ -238,14 +238,8 @@ elif selected == "Pattern Mining":
             st.write(f"The week with the highest number of incidents is **{max_week['Week']}** with **{max_week['Incident Count']} incidents**.")
             st.write(f"The week with the lowest number of incidents is **{min_week['Week']}** with **{min_week['Incident Count']} incidents**.")
 
-            # Add other sections like Heatmap, Frequent Pattern Mining, and Recommendations (as in the previous code)
-
-        except Exception as e:
-            st.error(f"Error during pattern mining: {e}")
-    else:
-        st.warning("No processed file found. Please identify incidents first.")
-
             # Severity and Incident Type Heatmap
+            st.subheader("Severity and Incident Type Heatmap")
             heatmap_data = df_processed.groupby(['Severity', 'Incident Type']).size().reset_index(name='Count')
             fig_heatmap = px.density_heatmap(
                 heatmap_data,
@@ -337,7 +331,6 @@ elif selected == "Pattern Mining":
             st.error(f"Error during pattern mining: {e}")
     else:
         st.warning("No processed file found. Please identify incidents first.")
-
 
 # User Behavior Analysis
 elif selected == "User Behavior Analysis":
