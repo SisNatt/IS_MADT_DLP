@@ -186,7 +186,7 @@ elif selected == "View Processed Data":
 elif selected == "Pattern Mining":
     st.title("🔍 Pattern Mining for Incidents")
 
-   if 'processed_file' in st.session_state:
+    if 'processed_file' in st.session_state:
         try:
             # Load processed file
             processed_file = st.session_state['processed_file']
@@ -205,19 +205,45 @@ elif selected == "Pattern Mining":
             # Weekly Trend Analysis
             df_processed['Week'] = df_processed['Occurred (UTC)'].dt.to_period('W').astype(str)
             weekly_trends = df_processed.groupby(['Week', 'Severity']).size().reset_index(name='Incident Count')
+            overall_weekly_trends = weekly_trends.groupby('Week')['Incident Count'].sum().reset_index()
 
-            # Weekly Incidents Comparison Chart
-            st.subheader("Weekly Incidents Comparison by Severity")
-            fig_weekly_comparison = px.bar(
+            # Combined Weekly Incident Chart
+            st.subheader("Combined Weekly Incidents and Trend")
+            fig_combined = px.bar(
                 weekly_trends,
                 x='Week',
                 y='Incident Count',
                 color='Severity',
-                title="Weekly Incident Counts by Severity",
+                title="Weekly Incidents by Severity with Overall Trend",
                 labels={'Week': 'Week', 'Incident Count': 'Number of Incidents', 'Severity': 'Severity'},
-                barmode='group'
+                barmode='stack'
             )
-            st.plotly_chart(fig_weekly_comparison)
+
+            # Add overall trend line to the combined chart
+            fig_combined.add_scatter(
+                x=overall_weekly_trends['Week'],
+                y=overall_weekly_trends['Incident Count'],
+                mode='lines+markers',
+                name='Overall Trend',
+                line=dict(color='black', width=2)
+            )
+
+            # Show combined chart
+            st.plotly_chart(fig_combined)
+
+            # Analysis for Weekly Trends
+            st.subheader("Analysis of Weekly Trends")
+            max_week = overall_weekly_trends.loc[overall_weekly_trends['Incident Count'].idxmax()]
+            min_week = overall_weekly_trends.loc[overall_weekly_trends['Incident Count'].idxmin()]
+            st.write(f"The week with the highest number of incidents is **{max_week['Week']}** with **{max_week['Incident Count']} incidents**.")
+            st.write(f"The week with the lowest number of incidents is **{min_week['Week']}** with **{min_week['Incident Count']} incidents**.")
+
+            # Add other sections like Heatmap, Frequent Pattern Mining, and Recommendations (as in the previous code)
+
+        except Exception as e:
+            st.error(f"Error during pattern mining: {e}")
+    else:
+        st.warning("No processed file found. Please identify incidents first.")
 
             # Severity and Incident Type Heatmap
             heatmap_data = df_processed.groupby(['Severity', 'Incident Type']).size().reset_index(name='Count')
