@@ -231,60 +231,81 @@ elif selected == "Pattern Mining":
             )
             st.plotly_chart(fig_heatmap)
 
-           # Frequent Pattern Mining Section
-st.subheader("Frequent Pattern Mining")
+            # Frequent Pattern Mining Section
+            st.subheader("Frequent Pattern Mining")
 
-# Prepare data for Frequent Pattern Mining
-transaction_data = df_processed.groupby('Event User')['Incident Type'].apply(list)
+            # Prepare data for Frequent Pattern Mining
+            transaction_data = df_processed.groupby('Event User')['Incident Type'].apply(list)
 
-try:
-    # Import required libraries
-    from mlxtend.preprocessing import TransactionEncoder
-    from mlxtend.frequent_patterns import apriori, association_rules
+            try:
+                # Import required libraries
+                from mlxtend.preprocessing import TransactionEncoder
+                from mlxtend.frequent_patterns import apriori, association_rules
 
-    # Apply TransactionEncoder
-    te = TransactionEncoder()
-    te_ary = te.fit(transaction_data).transform(transaction_data)
-    df_te = pd.DataFrame(te_ary, columns=te.columns_)
+                # Apply TransactionEncoder
+                te = TransactionEncoder()
+                te_ary = te.fit(transaction_data).transform(transaction_data)
+                df_te = pd.DataFrame(te_ary, columns=te.columns_)
 
-    # Generate Frequent Itemsets
-    frequent_itemsets = apriori(df_te, min_support=0.05, use_colnames=True)
+                # Generate Frequent Itemsets
+                frequent_itemsets = apriori(df_te, min_support=0.05, use_colnames=True)
 
-    # Generate Association Rules
-    if not frequent_itemsets.empty:
-        rules = association_rules(frequent_itemsets, metric="confidence", min_threshold=0.6)
-    else:
-        rules = pd.DataFrame()
+                # Generate Association Rules
+                if not frequent_itemsets.empty:
+                    rules = association_rules(frequent_itemsets, metric="confidence", min_threshold=0.6)
+                else:
+                    rules = pd.DataFrame()
 
-    # Display Frequent Itemsets
-    st.write("### Frequent Itemsets")
-    if not frequent_itemsets.empty:
-        st.dataframe(frequent_itemsets)
-    else:
-        st.warning("No frequent itemsets found. Try reducing the `min_support` threshold.")
+                # Display Frequent Itemsets
+                st.write("### Frequent Itemsets")
+                if not frequent_itemsets.empty:
+                    st.dataframe(frequent_itemsets)
+                else:
+                    st.warning("No frequent itemsets found. Try reducing the `min_support` threshold.")
 
-    # Display Association Rules
-    st.write("### Association Rules")
-    if not rules.empty:
-        st.dataframe(rules)
+                # Display Association Rules
+                st.write("### Association Rules")
+                if not rules.empty:
+                    st.dataframe(rules)
 
-        # Visualize Association Rules
-        fig_rules = px.scatter(
-            rules,
-            x='confidence',
-            y='lift',
-            size='support',
-            color=rules['antecedents'].apply(lambda x: ', '.join(list(x))),
-            title="Association Rules Visualization",
-            labels={'confidence': 'Confidence', 'lift': 'Lift', 'support': 'Support'}
-        )
-        st.plotly_chart(fig_rules)
-    else:
-        st.warning("No association rules found. Try adjusting the `min_threshold` for confidence.")
+                    # Visualize Association Rules
+                    fig_rules = px.scatter(
+                        rules,
+                        x='confidence',
+                        y='lift',
+                        size='support',
+                        color=rules['antecedents'].apply(lambda x: ', '.join(list(x))),
+                        title="Association Rules Visualization",
+                        labels={'confidence': 'Confidence', 'lift': 'Lift', 'support': 'Support'}
+                    )
+                    st.plotly_chart(fig_rules)
+                else:
+                    st.warning("No association rules found. Try adjusting the `min_threshold` for confidence.")
 
-except Exception as e:
-    st.error(f"Error in Frequent Pattern Mining: {e}")
+            except Exception as e:
+                st.error(f"Error in Frequent Pattern Mining: {e}")
 
+            # Recommendations Section
+            st.subheader("Recommendations")
+            try:
+                # Generate recommendations dynamically
+                most_frequent_severity = heatmap_data.groupby('Severity')['Count'].sum().idxmax()
+                most_frequent_incident_type = heatmap_data.groupby('Incident Type')['Count'].sum().idxmax()
+                top_combination = heatmap_data.loc[heatmap_data['Count'].idxmax()]
+
+                st.write(f"""
+                1. **Focus on {most_frequent_incident_type} Incidents**:
+                   - Incident Type `{most_frequent_incident_type}` has the highest number of incidents, particularly in the `{top_combination['Severity']}` severity level.
+                   - Investigate whether these incidents are routine activities or unusual behavior.
+
+                2. **Enhance Policies for {most_frequent_severity} Incidents**:
+                   - `{most_frequent_severity}` is the most frequent severity, indicating it may require stricter controls or enhanced policies.
+
+                3. **Refine Detection Rules for Less Severe Incidents**:
+                   - Focus on reducing unnecessary alerts for incidents with lower severity levels.
+                """)
+            except Exception as e:
+                st.error(f"Error generating recommendations: {e}")
 
         except Exception as e:
             st.error(f"Error during pattern mining: {e}")
