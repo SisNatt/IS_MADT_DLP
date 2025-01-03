@@ -270,9 +270,6 @@ elif selected == "Pattern Mining":
     else:
         st.warning("No processed file found. Please identify incidents first.")
 
-except Exception as e:
-    st.error(f"Error generating recommendations: {e}")
-
 
 # User Behavior Analysis
 elif selected == "User Behavior Analysis":
