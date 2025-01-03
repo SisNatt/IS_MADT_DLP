@@ -12,6 +12,8 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from sklearn.ensemble import IsolationForest
 from collections import Counter
+from sklearn.preprocessing import LabelEncoder  # Add this line
+
 
 # File paths
 INCIDENT_FILE = "https://drive.google.com/uc?id=1ueLKSgaNhvPEAjJsqad4iMcDfxsM8Nie"
