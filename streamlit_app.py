@@ -70,13 +70,19 @@ if selected == "Home - Raw Data":
                 df_raw.fillna('Unknown', inplace=True)
                 if 'Occurred (UTC)' in df_raw.columns:
                     df_raw['Occurred (UTC)'] = pd.to_datetime(df_raw['Occurred (UTC)'])
-                le = LabelEncoder()
-                for col in ['Severity', 'Incident Type', 'Event User']:
-                    if col in df_raw.columns:
-                        df_raw[col] = le.fit_transform(df_raw[col])
-
+                
+                # Add new fields for encoded values
+                le_severity = LabelEncoder()
+                le_incident_type = LabelEncoder()
+                
+                # Encode and add as new columns
+                if 'Severity' in df_raw.columns:
+                    df_raw['Severity_Encoded'] = le_severity.fit_transform(df_raw['Severity'])
+                if 'Incident Type' in df_raw.columns:
+                    df_raw['Incident_Type_Encoded'] = le_incident_type.fit_transform(df_raw['Incident Type'])
+                
                 # Display preprocessed data
-                st.write("Preprocessed Data:")
+                st.write("Preprocessed Data (with Encoded Fields):")
                 st.dataframe(df_raw)
 
                 # Save preprocessed data for further analysis
@@ -84,51 +90,16 @@ if selected == "Home - Raw Data":
                 df_raw.to_csv(preprocessed_file, index=False, encoding='utf-8-sig')
                 st.session_state['preprocessed_file'] = preprocessed_file
                 st.success("Data preprocessing completed. File saved.")
+
+                # Optionally display mapping for encoded fields
+                st.subheader("Mapping for Encoded Fields")
+                st.write("**Severity Mapping**")
+                st.write(dict(zip(le_severity.classes_, le_severity.transform(le_severity.classes_))))
+                st.write("**Incident Type Mapping**")
+                st.write(dict(zip(le_incident_type.classes_, le_incident_type.transform(le_incident_type.classes_))))
+
             except Exception as e:
                 st.error(f"Error preprocessing raw data: {e}")
-
-        # Process 1: Process Incidents (Existing Method)
-        st.subheader("Step 2: Process Incidents")
-        if st.button("Process Incidents (Existing Method)"):
-            try:
-                # Load preprocessed data
-                if 'preprocessed_file' in st.session_state:
-                    df_raw = pd.read_csv(st.session_state['preprocessed_file'], encoding='utf-8-sig')
-
-                # Load dictionary
-                df_dictionary = pd.read_csv(DICTIONARY_FILE, encoding='utf-8-sig')
-
-                # Define matching words
-                matching_words = set(df_dictionary['Word'].str.lower().str.strip())
-
-                def check_evidence_match(row):
-                    """Check if words in 'Evident_data' match the dictionary."""
-                    evident_data = str(row['Evident_data']).lower().strip()
-                    for word in matching_words:
-                        if word in evident_data:
-                            return 'True'
-                    return 'False'
-
-                # Validate 'Evident_data' column
-                if 'Evident_data' not in df_raw.columns:
-                    st.error("Column 'Evident_data' not found in the dataset.")
-                    st.stop()
-
-                # Apply the matching function
-                df_raw['Match_Label'] = df_raw.apply(check_evidence_match, axis=1)
-
-                # Save processed file
-                today = datetime.now().strftime("%d%m%y")
-                existing_files = [f for f in os.listdir(OUTPUT_DIR) if f.startswith(f"incident_log_with_match_{today}")]
-                running_number = len(existing_files) + 1
-                output_file = f"{OUTPUT_DIR}/incident_log_with_match_{today}_{running_number:03d}.csv"
-                df_raw.to_csv(output_file, index=False, encoding='utf-8-sig')
-
-                # Save processed file to session state
-                st.session_state['processed_file'] = output_file
-                st.success(f"Processed file saved as '{output_file}'")
-            except Exception as e:
-                st.error(f"Error processing incidents: {e}")
 
     except Exception as e:
         st.error(f"Error loading raw data: {e}")
