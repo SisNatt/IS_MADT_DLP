@@ -42,6 +42,19 @@ if selected == "Home - Raw Data":
     """)
     st.subheader("Raw Data Overview")
 
+    # Add Guideline Section
+    st.subheader("📖 Guideline for using the DLP Analyst Assistant app")
+    st.markdown("""
+    ### **1. Purpose of the app**
+    The DLP Analyst Assistant app is designed to help organizations' data analysis teams with Data Loss Prevention (DLP). It has the following functions:
+    - Analyze data loss events (Incidents) to find causes and effects
+    - Manage raw and processed data for in-depth analysis
+    - Find duplicate data patterns (Pattern Mining) to improve DLP policies
+    - Detect anomalies (Anomaly Detection) to reduce risks
+    - Analyze user behavior (User Behavior Analysis) to improve inspection efficiency
+    """)
+
+    # Display raw data and other elements (unchanged from existing functionality)
     try:
         # Load raw data
         df_raw = pd.read_csv(INCIDENT_FILE, encoding='utf-8-sig')
@@ -91,6 +104,7 @@ if selected == "Home - Raw Data":
 
     except Exception as e:
         st.error(f"Error loading raw data: {e}")
+
 
 # Page 2: View Processed Data
 elif selected == "View Processed Data":
