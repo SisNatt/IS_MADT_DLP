@@ -249,39 +249,30 @@ elif selected == "Pattern Mining":
 
             # Recommendations Section
             st.subheader("Recommendations")
-
-            # Dynamically Generate Recommendations Based on Graph Analysis
             try:
-            # Extract most frequent Severity and Incident Type from the heatmap data
-            most_frequent_severity = heatmap_data.groupby('Severity')['Count'].sum().idxmax()
-            most_frequent_incident_type = heatmap_data.groupby('Incident Type')['Count'].sum().idxmax()
-    
-            # Combination with the highest count
-            top_combination = heatmap_data.loc[heatmap_data['Count'].idxmax()]
-            top_severity = top_combination['Severity']
-            top_incident_type = top_combination['Incident Type']
-            top_count = top_combination['Count']
+                # Dynamically Generate Recommendations Based on Graph Analysis
+                st.write(f"""
+                1. **Focus on {most_frequent_incident_type} Incidents**:
+                   - Incident Type `{most_frequent_incident_type}` has the highest number of incidents ({top_combination['Count']} incidents), particularly in the `{top_combination['Severity']}` severity level.
+                   - Investigate whether these incidents are routine activities or unusual behavior.
 
-            # Generate Recommendations
-            st.write(f"""
-            1. **Focus on {top_incident_type} Incidents**:
-                - Incident Type `{top_incident_type}` has the highest number of incidents ({top_count} incidents), particularly in the `{top_severity}` severity level.
-                - Investigate whether these incidents are routine activities or unusual behavior.
+                2. **Enhance Policies for {most_frequent_severity} Incidents**:
+                   - `{most_frequent_severity}` is the most frequent severity, indicating it may require stricter controls or enhanced policies.
 
-            2. **Enhance Policies for {most_frequent_severity} Incidents**:
-               - `{most_frequent_severity}` is the most frequent severity, indicating it may require stricter controls or enhanced policies.
-
-            3. **Refine Detection Rules for Minor Severity**:
-               - While `{most_frequent_severity}` incidents dominate, consider refining rules to reduce unnecessary alerts for less severe incidents like `{most_frequent_incident_type}`.
-            """)
-except Exception as e:
-    st.error(f"Error generating recommendations: {e}")
-
+                3. **Refine Detection Rules for Minor Severity**:
+                   - While `{most_frequent_severity}` incidents dominate, consider refining rules to reduce unnecessary alerts for less severe incidents like `{most_frequent_incident_type}`.
+                """)
+            except Exception as e:
+                st.error(f"Error generating recommendations: {e}")
 
         except Exception as e:
             st.error(f"Error during pattern mining: {e}")
     else:
         st.warning("No processed file found. Please identify incidents first.")
+
+except Exception as e:
+    st.error(f"Error generating recommendations: {e}")
+
 
 # User Behavior Analysis
 elif selected == "User Behavior Analysis":
