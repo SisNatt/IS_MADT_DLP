@@ -272,13 +272,14 @@ elif selected == "Pattern Mining":
 
                 # Debug: Show Frequent Itemsets
                 st.write("### Frequent Itemsets")
-                if not frequent_itemsets.empty:
-                    st.dataframe(frequent_itemsets)
+                st.dataframe(frequent_itemsets)
 
-                    # Generate Association Rules
+                # Generate Association Rules
+                if not frequent_itemsets.empty:
+                    frequent_itemsets['num_itemsets'] = len(frequent_itemsets)  # Add num_itemsets for compatibility
                     rules = association_rules(frequent_itemsets, metric="confidence", min_threshold=0.6)
 
-                    # Debug: Show Association Rules
+                    # Display Association Rules
                     st.write("### Association Rules")
                     st.dataframe(rules)
 
@@ -301,6 +302,11 @@ elif selected == "Pattern Mining":
                 import traceback
                 st.error(traceback.format_exc())
 
+        except Exception as e:
+            st.error(f"Error during pattern mining: {e}")
+    else:
+        st.warning("No processed file found. Please identify incidents first.")
+        
             # Recommendations Section
             st.subheader("Recommendations")
             try:
