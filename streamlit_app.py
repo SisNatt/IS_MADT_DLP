@@ -205,38 +205,19 @@ elif selected == "Pattern Mining":
             # Weekly Trend Analysis
             df_processed['Week'] = df_processed['Occurred (UTC)'].dt.to_period('W').astype(str)
             weekly_trends = df_processed.groupby(['Week', 'Severity']).size().reset_index(name='Incident Count')
-            overall_weekly_trends = weekly_trends.groupby('Week')['Incident Count'].sum().reset_index()
 
-            # Combined Weekly Incident Chart
-            st.subheader("Combined Weekly Incidents and Trend")
-            fig_combined = px.bar(
+            # Weekly Incidents Comparison Chart
+            st.subheader("Weekly Incidents Comparison by Severity")
+            fig_weekly_comparison = px.bar(
                 weekly_trends,
                 x='Week',
                 y='Incident Count',
                 color='Severity',
-                title="Weekly Incidents by Severity with Overall Trend",
+                title="Weekly Incident Counts by Severity",
                 labels={'Week': 'Week', 'Incident Count': 'Number of Incidents', 'Severity': 'Severity'},
-                barmode='stack'
+                barmode='group'
             )
-
-            # Add overall trend line to the combined chart
-            fig_combined.add_scatter(
-                x=overall_weekly_trends['Week'],
-                y=overall_weekly_trends['Incident Count'],
-                mode='lines+markers',
-                name='Overall Trend',
-                line=dict(color='black', width=2)
-            )
-
-            # Show combined chart
-            st.plotly_chart(fig_combined)
-
-            # Analysis for Weekly Trends
-            st.subheader("Analysis of Weekly Trends")
-            max_week = overall_weekly_trends.loc[overall_weekly_trends['Incident Count'].idxmax()]
-            min_week = overall_weekly_trends.loc[overall_weekly_trends['Incident Count'].idxmin()]
-            st.write(f"The week with the highest number of incidents is **{max_week['Week']}** with **{max_week['Incident Count']} incidents**.")
-            st.write(f"The week with the lowest number of incidents is **{min_week['Week']}** with **{min_week['Incident Count']} incidents**.")
+            st.plotly_chart(fig_weekly_comparison)
 
             # Severity and Incident Type Heatmap
             heatmap_data = df_processed.groupby(['Severity', 'Incident Type']).size().reset_index(name='Count')
@@ -250,42 +231,54 @@ elif selected == "Pattern Mining":
             )
             st.plotly_chart(fig_heatmap)
 
-            # Analysis for Heatmap
-            st.subheader("Analysis of Heatmap: Severity vs Incident Type")
-            most_frequent_severity = heatmap_data.groupby('Severity')['Count'].sum().idxmax()
-            most_frequent_incident_type = heatmap_data.groupby('Incident Type')['Count'].sum().idxmax()
-            top_combination = heatmap_data.loc[heatmap_data['Count'].idxmax()]
-            
-            st.write(f"The most frequent severity is **{most_frequent_severity}**.")
-            st.write(f"The most frequent incident type is **{most_frequent_incident_type}**.")
-            st.write(
-                f"The combination of severity and incident type with the highest count is "
-                f"**Severity: {top_combination['Severity']}**, **Incident Type: {top_combination['Incident Type']}**, "
-                f"with **{top_combination['Count']} incidents**."
-            )
+            # Frequent Pattern Mining
+            st.subheader("Frequent Pattern Mining")
 
-            # Recommendations Section
-            st.subheader("Recommendations")
+            # Prepare data for Frequent Pattern Mining
+            transaction_data = df_processed.groupby('Event User')['Incident Type'].apply(list)
+
             try:
-                # Dynamically Generate Recommendations Based on Graph Analysis
-                st.write(f"""
-                1. **Focus on {most_frequent_incident_type} Incidents**:
-                   - Incident Type `{most_frequent_incident_type}` has the highest number of incidents ({top_combination['Count']} incidents), particularly in the `{top_combination['Severity']}` severity level.
-                   - Investigate whether these incidents are routine activities or unusual behavior.
+                # Apply TransactionEncoder
+                from mlxtend.preprocessing import TransactionEncoder
+                from mlxtend.frequent_patterns import apriori, association_rules
 
-                2. **Enhance Policies for {most_frequent_severity} Incidents**:
-                   - `{most_frequent_severity}` is the most frequent severity, indicating it may require stricter controls or enhanced policies.
+                te = TransactionEncoder()
+                te_ary = te.fit(transaction_data).transform(transaction_data)
+                df_te = pd.DataFrame(te_ary, columns=te.columns_)
 
-                3. **Refine Detection Rules for Minor Severity**:
-                   - While `{most_frequent_severity}` incidents dominate, consider refining rules to reduce unnecessary alerts for less severe incidents like `{most_frequent_incident_type}`.
-                """)
+                # Generate Frequent Itemsets
+                frequent_itemsets = apriori(df_te, min_support=0.05, use_colnames=True)
+
+                # Generate Association Rules
+                rules = association_rules(frequent_itemsets, metric="confidence", min_threshold=0.6)
+
+                # Display Frequent Itemsets
+                st.write("### Frequent Itemsets")
+                st.dataframe(frequent_itemsets)
+
+                # Display Association Rules
+                st.write("### Association Rules")
+                st.dataframe(rules)
+
+                # Visualize Association Rules
+                fig_rules = px.scatter(
+                    rules,
+                    x='confidence',
+                    y='lift',
+                    size='support',
+                    color=rules['antecedents'].apply(lambda x: ', '.join(list(x))),
+                    title="Association Rules Visualization",
+                    labels={'confidence': 'Confidence', 'lift': 'Lift', 'support': 'Support'}
+                )
+                st.plotly_chart(fig_rules)
             except Exception as e:
-                st.error(f"Error generating recommendations: {e}")
+                st.error(f"Error in Frequent Pattern Mining: {e}")
 
         except Exception as e:
             st.error(f"Error during pattern mining: {e}")
     else:
         st.warning("No processed file found. Please identify incidents first.")
+
 
 # User Behavior Analysis
 elif selected == "User Behavior Analysis":
