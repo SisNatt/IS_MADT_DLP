@@ -328,6 +328,24 @@ elif selected == "Pattern Mining":
             except Exception as e:
                 st.error(f"Error generating recommendations: {e}")
 
+         # Step 3: Grouping and Analysis
+            st.subheader("Step 3: Analyzing Patterns by User and Incident Type")
+            user_behavior = df_processed.groupby('Event User')['Incident Type'].value_counts()
+            
+            # Display results
+            st.write("Pattern Analysis Grouping:")
+            st.dataframe(user_behavior)
+
+            # Save results to CSV
+            pattern_csv = os.path.join(OUTPUT_DIR, "user_behavior_analysis.csv")
+            user_behavior.to_csv(pattern_csv, index=True)
+            st.success(f"Pattern analysis saved to {pattern_csv}")
+
+        except Exception as e:
+            st.error(f"Error during pattern mining: {e}")
+    else:
+        st.warning("No processed file found. Please identify incidents first.")
+
         except Exception as e:
             st.error(f"Error during pattern mining: {e}")
     else:
