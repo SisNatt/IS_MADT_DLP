@@ -214,6 +214,13 @@ elif selected == "Pattern Mining":
             )
             st.plotly_chart(fig_trend)
 
+            # Analysis for Weekly Trends
+            st.subheader("Analysis of Weekly Trends")
+            max_week = weekly_trends.loc[weekly_trends['Incident Count'].idxmax()]
+            min_week = weekly_trends.loc[weekly_trends['Incident Count'].idxmin()]
+            st.write(f"The week with the highest number of incidents is **{max_week['Week']}** with **{max_week['Incident Count']} incidents**.")
+            st.write(f"The week with the lowest number of incidents is **{min_week['Week']}** with **{min_week['Incident Count']} incidents**.")
+
             # Severity and Incident Type Heatmap
             heatmap_data = df_processed.groupby(['Severity', 'Incident Type']).size().reset_index(name='Count')
             fig_heatmap = px.density_heatmap(
@@ -225,6 +232,28 @@ elif selected == "Pattern Mining":
                 labels={'Incident Type': 'Incident Type', 'Severity': 'Severity', 'Count': 'Number of Incidents'}
             )
             st.plotly_chart(fig_heatmap)
+
+            # Analysis for Heatmap
+            st.subheader("Analysis of Heatmap: Severity vs Incident Type")
+            most_frequent_severity = heatmap_data.groupby('Severity')['Count'].sum().idxmax()
+            most_frequent_incident_type = heatmap_data.groupby('Incident Type')['Count'].sum().idxmax()
+            top_combination = heatmap_data.loc[heatmap_data['Count'].idxmax()]
+            
+            st.write(f"The most frequent severity is **{most_frequent_severity}**.")
+            st.write(f"The most frequent incident type is **{most_frequent_incident_type}**.")
+            st.write(
+                f"The combination of severity and incident type with the highest count is "
+                f"**Severity: {top_combination['Severity']}**, **Incident Type: {top_combination['Incident Type']}**, "
+                f"with **{top_combination['Count']} incidents**."
+            )
+
+            # Recommendations
+            st.subheader("Recommendations")
+            st.write("""
+            1. **Focus on Printer Incidents**: Investigate whether incidents related to `Printer` are routine activities or unusual behavior.
+            2. **Enhance Policies for Critical Incidents**: Develop stricter policies for `Cloud` and `Removable Storage` incidents to address potential risks.
+            3. **Refine Detection Rules for Minor Severity**: Adjust rules to reduce unnecessary alerts and improve detection accuracy.
+            """)
 
         except Exception as e:
             st.error(f"Error during pattern mining: {e}")
