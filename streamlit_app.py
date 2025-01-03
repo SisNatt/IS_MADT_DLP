@@ -204,20 +204,36 @@ elif selected == "Pattern Mining":
 
             # Weekly Trend Analysis
             df_processed['Week'] = df_processed['Occurred (UTC)'].dt.to_period('W').astype(str)
-            weekly_trends = df_processed.groupby('Week').size().reset_index(name='Incident Count')
-            fig_trend = px.line(
+            weekly_trends = df_processed.groupby(['Week', 'Severity']).size().reset_index(name='Incident Count')
+
+            # Weekly Incidents Comparison Chart
+            st.subheader("Weekly Incidents Comparison by Severity")
+            fig_weekly_comparison = px.bar(
                 weekly_trends,
                 x='Week',
                 y='Incident Count',
-                title="Weekly Trend of Incidents",
+                color='Severity',
+                title="Weekly Incident Counts by Severity",
+                labels={'Week': 'Week', 'Incident Count': 'Number of Incidents', 'Severity': 'Severity'},
+                barmode='group'
+            )
+            st.plotly_chart(fig_weekly_comparison)
+
+            # Weekly Trend Analysis (Overall)
+            overall_weekly_trends = weekly_trends.groupby('Week')['Incident Count'].sum().reset_index()
+            fig_trend = px.line(
+                overall_weekly_trends,
+                x='Week',
+                y='Incident Count',
+                title="Weekly Trend of Incidents (Overall)",
                 labels={'Week': 'Week', 'Incident Count': 'Number of Incidents'}
             )
             st.plotly_chart(fig_trend)
 
             # Analysis for Weekly Trends
             st.subheader("Analysis of Weekly Trends")
-            max_week = weekly_trends.loc[weekly_trends['Incident Count'].idxmax()]
-            min_week = weekly_trends.loc[weekly_trends['Incident Count'].idxmin()]
+            max_week = overall_weekly_trends.loc[overall_weekly_trends['Incident Count'].idxmax()]
+            min_week = overall_weekly_trends.loc[overall_weekly_trends['Incident Count'].idxmin()]
             st.write(f"The week with the highest number of incidents is **{max_week['Week']}** with **{max_week['Incident Count']} incidents**.")
             st.write(f"The week with the lowest number of incidents is **{min_week['Week']}** with **{min_week['Incident Count']} incidents**.")
 
@@ -269,7 +285,6 @@ elif selected == "Pattern Mining":
             st.error(f"Error during pattern mining: {e}")
     else:
         st.warning("No processed file found. Please identify incidents first.")
-
 
 # User Behavior Analysis
 elif selected == "User Behavior Analysis":
