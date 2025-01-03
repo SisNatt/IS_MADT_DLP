@@ -64,8 +64,9 @@ if selected == "Home - Raw Data":
         with st.expander("View Raw Data"):
             st.dataframe(df_raw)
 
-        # Add a button to process incidents
-        if st.button("Process Incidents"):
+        # Existing Functionality: Process Incidents
+        st.subheader("Step 1: Process Incidents")
+        if st.button("Process Incidents (Existing Method)"):
             try:
                 # Load dictionary
                 df_dictionary = pd.read_csv(DICTIONARY_FILE, encoding='utf-8-sig')
@@ -102,9 +103,33 @@ if selected == "Home - Raw Data":
             except Exception as e:
                 st.error(f"Error processing incidents: {e}")
 
+        # New Functionality: Data Preprocessing
+        st.subheader("Step 2: Data Preprocessing (New Method)")
+        if st.button("Preprocess Data"):
+            try:
+                # Preprocess raw data
+                df_raw.fillna('Unknown', inplace=True)
+                if 'Occurred (UTC)' in df_raw.columns:
+                    df_raw['Occurred (UTC)'] = pd.to_datetime(df_raw['Occurred (UTC)'])
+                le = LabelEncoder()
+                for col in ['Severity', 'Incident Type', 'Event User']:
+                    if col in df_raw.columns:
+                        df_raw[col] = le.fit_transform(df_raw[col])
+
+                # Display preprocessed data
+                st.write("Preprocessed Data:")
+                st.dataframe(df_raw)
+
+                # Save preprocessed data for further analysis
+                preprocessed_file = os.path.join(OUTPUT_DIR, "preprocessed_data.csv")
+                df_raw.to_csv(preprocessed_file, index=False, encoding='utf-8-sig')
+                st.session_state['preprocessed_file'] = preprocessed_file
+                st.success("Data preprocessing completed. File saved.")
+            except Exception as e:
+                st.error(f"Error preprocessing raw data: {e}")
+
     except Exception as e:
         st.error(f"Error loading raw data: {e}")
-
 
 # Page 2: View Processed Data
 elif selected == "View Processed Data":
