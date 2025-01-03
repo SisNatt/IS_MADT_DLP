@@ -270,25 +270,16 @@ elif selected == "Pattern Mining":
                 # Generate Frequent Itemsets
                 frequent_itemsets = apriori(df_te, min_support=0.05, use_colnames=True)
 
-                import mlxtend
-                st.write(f"mlxtend version: {mlxtend.__version__}")
-
-                # Generate Association Rules
-                if not frequent_itemsets.empty:
-                    rules = association_rules(frequent_itemsets, metric="confidence", min_threshold=0.6)
-                else:
-                    rules = pd.DataFrame()
-
-                # Display Frequent Itemsets
+                # Debug: Show Frequent Itemsets
                 st.write("### Frequent Itemsets")
                 if not frequent_itemsets.empty:
                     st.dataframe(frequent_itemsets)
-                else:
-                    st.warning("No frequent itemsets found. Try reducing the `min_support` threshold.")
 
-                # Display Association Rules
-                st.write("### Association Rules")
-                if not rules.empty:
+                    # Generate Association Rules
+                    rules = association_rules(frequent_itemsets, metric="confidence", min_threshold=0.6)
+
+                    # Debug: Show Association Rules
+                    st.write("### Association Rules")
                     st.dataframe(rules)
 
                     # Visualize Association Rules
@@ -303,10 +294,12 @@ elif selected == "Pattern Mining":
                     )
                     st.plotly_chart(fig_rules)
                 else:
-                    st.warning("No association rules found. Try adjusting the `min_threshold` for confidence.")
+                    st.warning("No frequent itemsets found. Try reducing the `min_support` threshold.")
 
             except Exception as e:
                 st.error(f"Error in Frequent Pattern Mining: {e}")
+                import traceback
+                st.error(traceback.format_exc())
 
             # Recommendations Section
             st.subheader("Recommendations")
