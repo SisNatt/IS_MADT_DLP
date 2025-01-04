@@ -539,7 +539,7 @@ elif selected == "Anomaly Detection":
                 title="Anomaly Detection Visualization",
                 labels={'Incident Count': 'Incident Count', 'Severity Numeric': 'Severity (Numeric)'}
             )
-            st.plotly_chart(fig)
+            st.plotly_chart(fig, use_container_width=True, key="scatter_anomalies")
 
             st.subheader("Step 4: Additional Analysis - Summary of Anomalies and Normal Data")
 
@@ -577,7 +577,6 @@ elif selected == "Anomaly Detection":
                - Review high Incident Count anomalies with low Severity Numeric for potential false positives or unusual behavior.
                - Add more contextual features to improve the quality of anomaly detection.
             """)
-            st.plotly_chart(fig)
 
             st.subheader("Step 5: Detailed Anomaly Analysis")
 
@@ -612,7 +611,7 @@ elif selected == "Anomaly Detection":
                 title="Incident Type Distribution in Anomalies",
                 labels={'Incident Type': 'Incident Type', 'Count': 'Count'}
             )
-            st.plotly_chart(fig_incident_type)
+            st.plotly_chart(fig_incident_type, use_container_width=True, key="bar_incident_type")
 
             # Visualization of Severity Distribution in Anomalies
             severity_anomalies = top_anomalous_users['Severity'].value_counts().reset_index()
@@ -624,7 +623,7 @@ elif selected == "Anomaly Detection":
                 title="Severity Distribution in Anomalies",
                 hole=0.4
             )
-            st.plotly_chart(fig_severity)
+            st.plotly_chart(fig_severity, use_container_width=True, key="pie_severity")
 
         except Exception as e:
             st.error(f"Error during anomaly detection: {e}")
