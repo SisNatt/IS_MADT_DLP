@@ -416,6 +416,9 @@ elif selected == "User Behavior Analysis":
                 )
                 st.write("Classification Distribution:")
                 st.dataframe(classification_count)
+                with st.expander("Classification Distribution:"):
+                st.dataframe(df_false)
+
             else:
                 st.warning("Column 'Classification' not found in the dataset.")
 
@@ -436,19 +439,21 @@ elif selected == "User Behavior Analysis":
                     # Display clustering results
                     st.write("Clustering Results:")
                     st.dataframe(df_processed[['Event User', 'Cluster']].drop_duplicates())
+                    with st.expander("Clustering Results:"):
+                    st.dataframe(df_false)
 
                     # Visualization: Scatter Plot for Clustering
-                    st.subheader("Cluster Visualization: Scatter Plot")
-                    fig_scatter = px.scatter(
-                        df_processed,
-                        x='Severity',
-                        y='Incident Type',
-                        color='Cluster',
-                        title="Scatter Plot of Clusters",
-                        labels={'Severity': 'Severity', 'Incident Type': 'Incident Type'},
-                        hover_data=['Event User']
-                    )
-                    st.plotly_chart(fig_scatter)
+                    #st.subheader("Cluster Visualization: Scatter Plot")
+                    #fig_scatter = px.scatter(
+                        #df_processed,
+                        #x='Severity',
+                        #y='Incident Type',
+                        #color='Cluster',
+                        #title="Scatter Plot of Clusters",
+                        #labels={'Severity': 'Severity', 'Incident Type': 'Incident Type'},
+                        #hover_data=['Event User']
+                    #)
+                    #st.plotly_chart(fig_scatter)
 
                     # Visualization: Pie Chart
                     st.subheader("Cluster Proportions: Pie Chart")
@@ -461,22 +466,22 @@ elif selected == "User Behavior Analysis":
                     st.plotly_chart(fig_pie)
 
                     # Bar Chart for Cluster Sizes
-                    st.subheader("Cluster Distribution: Bar Chart")
-                    cluster_sizes = df_processed['Cluster'].value_counts().reset_index()
-                    cluster_sizes.columns = ['Cluster', 'Count']
+                    #st.subheader("Cluster Distribution: Bar Chart")
+                    #cluster_sizes = df_processed['Cluster'].value_counts().reset_index()
+                    #cluster_sizes.columns = ['Cluster', 'Count']
 
-                    fig_bar_sizes = px.bar(
-                        cluster_sizes,
-                        x='Cluster',
-                        y='Count',
-                        title="Number of Users in Each Cluster",
-                        labels={'Cluster': 'Cluster', 'Count': 'Number of Users'},
-                        text='Count'
-                    )
+                    #fig_bar_sizes = px.bar(
+                        #cluster_sizes,
+                        #x='Cluster',
+                        #y='Count',
+                        #title="Number of Users in Each Cluster",
+                        #labels={'Cluster': 'Cluster', 'Count': 'Number of Users'},
+                        #text='Count'
+                    #)
                     fig_bar_sizes.update_traces(texttemplate='%{text}', textposition='outside')
                     st.plotly_chart(fig_bar_sizes)
 
-                    # Bar Chart for Incident Type Distribution
+                    Bar Chart for Incident Type Distribution
                     st.subheader("Incident Type Distribution by Cluster")
                     incident_type_distribution = df_processed.groupby(['Cluster', 'Incident Type']).size().reset_index(name='Count')
 
