@@ -438,7 +438,7 @@ elif selected == "User Behavior Analysis":
                     st.dataframe(df_processed[['Event User', 'Cluster']].drop_duplicates())
 
                     # Analyze clusters
-                    cluster_analysis = df_processed.groupby('Cluster')['Incident Type'].value_counts()
+                    cluster_analysis = df_processed.groupby('Cluster')['Incident Type'].value_counts().reset_index(name='Count')
                     st.write("Cluster Analysis:")
                     st.dataframe(cluster_analysis)
 
@@ -446,22 +446,24 @@ elif selected == "User Behavior Analysis":
                     clustering_csv = os.path.join(OUTPUT_DIR, "user_behavior_clustering.csv")
                     df_processed.to_csv(clustering_csv, index=False, encoding='utf-8-sig')
                     st.success(f"Clustering analysis saved to {clustering_csv}")
+
+                    # Visualization: Scatter Plot for Clustering
+                    st.subheader("Cluster Visualization: Scatter Plot")
+                    fig_scatter = px.scatter(
+                        df_processed,
+                        x='Severity',
+                        y='Incident Type',
+                        color='Cluster',
+                        title="Scatter Plot of Clusters",
+                        labels={'Severity': 'Severity', 'Incident Type': 'Incident Type'},
+                        hover_data=['Event User']
+                    )
+                    st.plotly_chart(fig_scatter)
+
                 except Exception as e:
                     st.error(f"Error during clustering: {e}")
             else:
                 st.error("Required features for clustering are missing.")
-                # Scatter Plot for Clustering
-                st.subheader("Cluster Visualization: Scatter Plot")
-                fig_scatter = px.scatter(
-                    df_processed,
-                    x='Severity',
-                    y='Incident Type',
-                    color='Cluster',
-                    title="Scatter Plot of Clusters",
-                    labels={'Severity': 'Severity', 'Incident Type': 'Incident Type'},
-                    hover_data=['Event User']
-                )
-                st.plotly_chart(fig_scatter)
 
         except Exception as e:
             st.error(f"Error during user behavior analysis: {e}")
