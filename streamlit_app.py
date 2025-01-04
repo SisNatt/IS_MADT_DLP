@@ -541,8 +541,8 @@ elif selected == "Anomaly Detection":
             )
             st.plotly_chart(fig)
 
-            # Step 4: Displaying Dynamic Analysis Results
-            st.subheader("Step 4: Additional Analysis - Summary of Anomalies and Normal Data")
+            # Step 5: Displaying Dynamic Analysis Results
+            st.subheader("Step 5: Additional Analysis - Summary of Anomalies and Normal Data")
 
             # Dynamically calculate and display the anomaly and normal group statistics
             anomaly_summary = anomaly_features.groupby('Anomaly').agg({
@@ -578,7 +578,7 @@ elif selected == "Anomaly Detection":
                - Review high Incident Count anomalies with low Severity Numeric for potential false positives or unusual behavior.
                - Add more contextual features to improve the quality of anomaly detection.
             """)
-            st.subheader("Step 4: Detailed Anomaly Analysis")
+             st.subheader("Step 4: Detailed Anomaly Analysis")
 
             # Top user with anomalies
             top_anomalous_users = df_processed[df_processed['Event User'].isin(
@@ -600,22 +600,26 @@ elif selected == "Anomaly Detection":
                   - ⚠️ **{most_common_severity}**
                 """
             )
-            # Visualization of Top User's Anomalies
-            incident_type_counts = top_anomalous_users[top_anomalous_users['Event User'] == top_user]['Incident Type'].value_counts().reset_index()
-            incident_type_counts.columns = ['Incident Type', 'Count']
-            fig_user = px.bar(
-                incident_type_counts,
+
+            # Visualization of Incident Type Distribution in Anomalies
+            incident_type_anomalies = top_anomalous_users['Incident Type'].value_counts().reset_index()
+            incident_type_anomalies.columns = ['Incident Type', 'Count']
+            fig_incident_type = px.bar(
+                incident_type_anomalies,
                 x='Incident Type',
                 y='Count',
-                title=f"Incident Type Distribution for Top Anomalous User: {top_user}",
+                title="Incident Type Distribution in Anomalies",
                 labels={'Incident Type': 'Incident Type', 'Count': 'Count'}
             )
-            st.plotly_chart(fig_user)
+            st.plotly_chart(fig_incident_type)
 
             # Visualization of Severity Distribution in Anomalies
+            severity_anomalies = top_anomalous_users['Severity'].value_counts().reset_index()
+            severity_anomalies.columns = ['Severity', 'Count']
             fig_severity = px.pie(
-                top_anomalous_users,
+                severity_anomalies,
                 names='Severity',
+                values='Count',
                 title="Severity Distribution in Anomalies",
                 hole=0.4
             )
