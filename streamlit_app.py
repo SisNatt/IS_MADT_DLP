@@ -506,40 +506,36 @@ elif selected == "User Behavior Analysis":
             st.pyplot(plt.gcf())  # Show the chart in Streamlit
 
          # Step 4: Clustering for Behavior Analysis
-            st.subheader("Step 4: Clustering for User Behavior")
-            features = ['Severity', 'Incident Type']
-            if all(col in df_processed.columns for col in features):
-                clustering_data = df_processed[features]
+        st.subheader("Step 4: Clustering for User Behavior")
+        features = ['Severity', 'Incident Type']
+        if all(col in df_processed.columns for col in features):
+            clustering_data = df_processed[features]
 
-                # Apply KMeans clustering
-                kmeans = KMeans(n_clusters=5, random_state=42)
-                df_processed['Cluster'] = kmeans.fit_predict(clustering_data)
+            # Apply KMeans clustering
+            kmeans = KMeans(n_clusters=5, random_state=42)
+            df_processed['Cluster'] = kmeans.fit_predict(clustering_data)
 
-                # Display clusters
-                st.write("Clustering Results:")
-                st.dataframe(df_processed[['Event User', 'Cluster']].drop_duplicates())
+            # Display clusters
+            st.write("Clustering Results:")
+            st.dataframe(df_processed[['Event User', 'Cluster']].drop_duplicates())
 
-                # Analyze clusters
-                cluster_analysis = df_processed.groupby('Cluster')['Incident Type'].value_counts()
-                st.write("Cluster Analysis:")
-                st.dataframe(cluster_analysis)
+            # Analyze clusters
+            cluster_analysis = df_processed.groupby('Cluster')['Incident Type'].value_counts()
+            st.write("Cluster Analysis:")
+            st.dataframe(cluster_analysis)
 
-                # Save clustering results
-                clustering_csv = os.path.join(OUTPUT_DIR, "user_behavior_clustering.csv")
-                df_processed.to_csv(clustering_csv, index=False, encoding='utf-8-sig')
-                st.success(f"Clustering analysis saved to {clustering_csv}")
-            else:
-                st.error("Required features for clustering are missing.")
+            # Save clustering results
+            clustering_csv = os.path.join(OUTPUT_DIR, "user_behavior_clustering.csv")
+            df_processed.to_csv(clustering_csv, index=False, encoding='utf-8-sig')
+            st.success(f"Clustering analysis saved to {clustering_csv}")
+        else:
+            st.error("Required features for clustering are missing.")
 
-        except Exception as e:
-            st.error(f"Error during clustering analysis: {e}")
-    else:
-        st.warning("No processed file found. Please identify incidents first.")
+    except Exception as e:
+        st.error(f"Error during clustering analysis: {e}")
+else:
+    st.warning("No processed file found. Please identify incidents first.")
 
-        except Exception as e:
-            st.error(f"Error analyzing user behavior: {e}")
-    else:
-        st.warning("No processed file found. Please identify incidents first.")
 
 # Anomaly Detection
 elif selected == "Anomaly Detection":
