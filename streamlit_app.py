@@ -395,7 +395,6 @@ elif selected == "User Behavior Analysis":
             )
             st.plotly_chart(fig)
 
-            # Step 3: Focus on Match_Label = False
             st.subheader("Step 3: Focus on Match_Label = False")
             df_processed['Match_Label'] = df_processed['Match_Label'].apply(
                 lambda x: str(x).strip().lower() == 'true'
@@ -403,8 +402,9 @@ elif selected == "User Behavior Analysis":
             df_false = df_processed[df_processed['Match_Label'] == False]
             st.write(f"Total False records: {len(df_false)}")
 
+            # Show False Data in an Expander
             with st.expander("View False Data"):
-                st.dataframe(df_false)
+            st.dataframe(df_false)
 
             if 'Classification' in df_false.columns:
                 st.subheader("Most Frequent Classification in False Cases")
@@ -414,15 +414,13 @@ elif selected == "User Behavior Analysis":
                     f"The most frequent classification is **'{classification_count.iloc[0]['Classification']}'** "
                     f"with **{classification_count.iloc[0]['Count']}** occurrences."
                 )
-                st.write("Classification Distribution:")
-                st.dataframe(classification_count)
-                with st.expander("Classification Distribution:"):
-                st.dataframe(df_false)
 
+                # Show Classification Distribution in an Expander
+                with st.expander("View Classification Distribution"):
+                    st.dataframe(classification_count)
             else:
                 st.warning("Column 'Classification' not found in the dataset.")
 
-            # Step 4: Clustering for User Behavior
             st.subheader("Step 4: Clustering for User Behavior")
             features = ['Severity', 'Incident Type']
             if all(col in df_processed.columns for col in features):
@@ -436,11 +434,9 @@ elif selected == "User Behavior Analysis":
                     kmeans = KMeans(n_clusters=5, random_state=42)
                     df_processed['Cluster'] = kmeans.fit_predict(clustering_data)
 
-                    # Display clustering results
-                    st.write("Clustering Results:")
-                    st.dataframe(df_processed[['Event User', 'Cluster']].drop_duplicates())
-                    with st.expander("Clustering Results:"):
-                    st.dataframe(df_false)
+                    # Show Clustering Results in an Expander
+                    with st.expander("Clustering Results"):
+                        st.dataframe(df_processed[['Event User', 'Cluster']].drop_duplicates())
 
                     # Visualization: Scatter Plot for Clustering
                     #st.subheader("Cluster Visualization: Scatter Plot")
