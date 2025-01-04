@@ -450,6 +450,18 @@ elif selected == "User Behavior Analysis":
                     st.error(f"Error during clustering: {e}")
             else:
                 st.error("Required features for clustering are missing.")
+                # Scatter Plot for Clustering
+                st.subheader("Cluster Visualization: Scatter Plot")
+                fig_scatter = px.scatter(
+                    df_processed,
+                    x='Severity',
+                    y='Incident Type',
+                    color='Cluster',
+                    title="Scatter Plot of Clusters",
+                    labels={'Severity': 'Severity', 'Incident Type': 'Incident Type'},
+                    hover_data=['Event User']
+                )
+                st.plotly_chart(fig_scatter)
 
         except Exception as e:
             st.error(f"Error during user behavior analysis: {e}")
