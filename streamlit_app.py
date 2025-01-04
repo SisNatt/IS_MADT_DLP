@@ -440,31 +440,7 @@ elif selected == "User Behavior Analysis":
                     with st.expander("Clustering Results"):
                         st.dataframe(df_processed[['Event User', 'Cluster']].drop_duplicates())
 
-                    # Visualization: Pie Chart
-                    st.subheader("Cluster Proportions: Pie Chart")
-                    fig_pie = px.pie(
-                        df_processed,
-                        names='Cluster',
-                        title="Proportion of Users in Each Cluster",
-                        hole=0.3
-                    )
-                    st.plotly_chart(fig_pie)
-
-                    # Visualization: Incident Type Distribution by Cluster
-                    st.subheader("Incident Type Distribution by Cluster")
-                    incident_type_distribution = df_processed.groupby(['Cluster', 'Incident Type']).size().reset_index(name='Count')
-                    fig_bar_incidents = px.bar(
-                        incident_type_distribution,
-                        x='Cluster',
-                        y='Count',
-                        color='Incident Type',
-                        title="Incident Types by Cluster",
-                        labels={'Cluster': 'Cluster', 'Count': 'Number of Incidents'},
-                        barmode='stack'
-                    )
-                    st.plotly_chart(fig_bar_incidents)
-
-                    # Analyze and Describe Clusters
+                     # Analyze and Describe Clusters
                     st.subheader("Cluster Descriptions")
                     st.markdown(
                         """
@@ -489,6 +465,32 @@ elif selected == "User Behavior Analysis":
                           - **Examples:** Removable Storage, Printer, Network Share, Screen Capture.
                         """
                     )
+
+                    # Visualization: Pie Chart
+                    st.subheader("Cluster Proportions: Pie Chart")
+                    fig_pie = px.pie(
+                        df_processed,
+                        names='Cluster',
+                        title="Proportion of Users in Each Cluster",
+                        hole=0.3
+                    )
+                    st.plotly_chart(fig_pie)
+
+                    # Visualization: Incident Type Distribution by Cluster
+                    st.subheader("Incident Type Distribution by Cluster")
+                    incident_type_distribution = df_processed.groupby(['Cluster', 'Incident Type']).size().reset_index(name='Count')
+                    fig_bar_incidents = px.bar(
+                        incident_type_distribution,
+                        x='Cluster',
+                        y='Count',
+                        color='Incident Type',
+                        title="Incident Types by Cluster",
+                        labels={'Cluster': 'Cluster', 'Count': 'Number of Incidents'},
+                        barmode='stack'
+                    )
+                    st.plotly_chart(fig_bar_incidents)
+
+                   
                 except Exception as e:
                     st.error(f"Error during clustering: {e}")
             else:
