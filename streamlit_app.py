@@ -586,16 +586,20 @@ elif selected == "Anomaly Detection":
             )]
 
             top_user = top_anomalous_users['Event User'].value_counts().idxmax()
-            st.write(f"### Top User with Anomalies: {top_user}")
-
-            # Most frequent anomalous Incident Type
             most_common_incident = top_anomalous_users['Incident Type'].value_counts().idxmax()
-            st.write(f"### Most Common Incident Type in Anomalies: {most_common_incident}")
-
-            # Most frequent anomalous Severity
             most_common_severity = top_anomalous_users['Severity'].value_counts().idxmax()
-            st.write(f"### Most Common Severity in Anomalies: {most_common_severity}")
 
+            st.markdown(
+                f"""
+                ### Highlights of Anomalies
+                - **Top User with Anomalies:**
+                  - 🧑‍💻 **{top_user}**
+                - **Most Common Incident Type in Anomalies:**
+                  - 🚨 **{most_common_incident}**
+                - **Most Common Severity in Anomalies:**
+                  - ⚠️ **{most_common_severity}**
+                """
+            )
             # Visualization of Top User's Anomalies
             incident_type_counts = top_anomalous_users[top_anomalous_users['Event User'] == top_user]['Incident Type'].value_counts().reset_index()
             incident_type_counts.columns = ['Incident Type', 'Count']
