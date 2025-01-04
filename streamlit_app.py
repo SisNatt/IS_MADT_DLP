@@ -541,7 +541,6 @@ elif selected == "Anomaly Detection":
             )
             st.plotly_chart(fig)
 
-            # Step 4: Displaying Dynamic Analysis Results
             st.subheader("Step 4: Additional Analysis - Summary of Anomalies and Normal Data")
 
             # Dynamically calculate and display the anomaly and normal group statistics
@@ -579,8 +578,9 @@ elif selected == "Anomaly Detection":
                - Add more contextual features to improve the quality of anomaly detection.
             """)
             st.plotly_chart(fig)
-            
-             st.subheader("Step 5: Detailed Anomaly Analysis")
+
+            st.subheader("Step 5: Detailed Anomaly Analysis")
+
             # Top user with anomalies
             top_anomalous_users = df_processed[df_processed['Event User'].isin(
                 anomaly_features[anomaly_features['Anomaly'] == 'Anomaly']['Event User']
@@ -630,4 +630,3 @@ elif selected == "Anomaly Detection":
             st.error(f"Error during anomaly detection: {e}")
     else:
         st.warning("No processed file found. Please identify incidents first.")
-
