@@ -578,6 +578,43 @@ elif selected == "Anomaly Detection":
                - Review high Incident Count anomalies with low Severity Numeric for potential false positives or unusual behavior.
                - Add more contextual features to improve the quality of anomaly detection.
             """)
+            st.subheader("Step 4: Detailed Anomaly Analysis")
+
+            # Top user with anomalies
+            top_anomalous_users = df_processed[df_processed['Event User'].isin(
+                anomaly_features[anomaly_features['Anomaly'] == 'Anomaly']['Event User']
+            )]
+
+            top_user = top_anomalous_users['Event User'].value_counts().idxmax()
+            st.write(f"### Top User with Anomalies: {top_user}")
+
+            # Most frequent anomalous Incident Type
+            most_common_incident = top_anomalous_users['Incident Type'].value_counts().idxmax()
+            st.write(f"### Most Common Incident Type in Anomalies: {most_common_incident}")
+
+            # Most frequent anomalous Severity
+            most_common_severity = top_anomalous_users['Severity'].value_counts().idxmax()
+            st.write(f"### Most Common Severity in Anomalies: {most_common_severity}")
+
+            # Visualization of Top User's Anomalies
+            fig_user = px.bar(
+                top_anomalous_users[top_anomalous_users['Event User'] == top_user]['Incident Type'].value_counts().reset_index(),
+                x='index',
+                y='Incident Type',
+                title=f"Incident Type Distribution for Top Anomalous User: {top_user}",
+                labels={'index': 'Incident Type', 'Incident Type': 'Count'}
+            )
+            st.plotly_chart(fig_user)
+
+            # Visualization of Severity Distribution in Anomalies
+            fig_severity = px.pie(
+                top_anomalous_users,
+                names='Severity',
+                title="Severity Distribution in Anomalies",
+                hole=0.4
+            )
+            st.plotly_chart(fig_severity)
+
 
         except Exception as e:
             st.error(f"Error during anomaly detection: {e}")
