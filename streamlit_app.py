@@ -451,6 +451,12 @@ elif selected == "User Behavior Analysis":
             else:
                 st.error("Required features for clustering are missing.")
 
+        except Exception as e:
+            st.error(f"Error during user behavior analysis: {e}")
+    else:
+        st.warning("No processed file found. Please identify incidents first.")
+
+
 
 # Anomaly Detection
 elif selected == "Anomaly Detection":
