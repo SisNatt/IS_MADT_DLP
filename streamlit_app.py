@@ -353,10 +353,10 @@ elif selected == "User Behavior Analysis":
 
     if 'processed_file' in st.session_state:
         try:
+            # Load the processed file
             processed_file = st.session_state['processed_file']
             df_processed = pd.read_csv(processed_file, encoding='utf-8-sig')
 
-            # Added Analysis: User Behavior Profile and Clustering
             # Step 1: User Behavior Profile
             st.subheader("Step 1: User Behavior Profile")
             user_behavior = df_processed.groupby('Event User').agg({
@@ -365,12 +365,14 @@ elif selected == "User Behavior Analysis":
                 'Destination': lambda x: x.mode().iloc[0] if not x.mode().empty else None,
                 'Occurred (UTC)': 'count'
             }).reset_index()
-            user_behavior.columns = ['Event User', 'Most Frequent Incident Type', 'Most Frequent Severity',
-                                     'Most Frequent Destination', 'Total Incidents']
+            user_behavior.columns = [
+                'Event User', 'Most Frequent Incident Type',
+                'Most Frequent Severity', 'Most Frequent Destination', 'Total Incidents'
+            ]
             st.dataframe(user_behavior)
 
             # Step 2: Timeline of Top 5 Users
-            st.subheader("Timeline of Top 5 Users' Incidents (Last Month)")
+            st.subheader("Step 2: Timeline of Top 5 Users' Incidents (Last Month)")
             df_processed['Occurred (UTC)'] = pd.to_datetime(df_processed['Occurred (UTC)'])
             last_month = datetime.now() - pd.DateOffset(months=1)
             filtered_data = df_processed[df_processed['Occurred (UTC)'] >= last_month]
@@ -382,7 +384,6 @@ elif selected == "User Behavior Analysis":
                 [filtered_data_top_users['Occurred (UTC)'].dt.date, 'Event User']
             ).size().reset_index(name='Incident Count')
 
-            # Plot timeline
             fig = px.line(
                 timeline_data,
                 x='Occurred (UTC)',
@@ -397,145 +398,51 @@ elif selected == "User Behavior Analysis":
             # Step 3: Focus on Match_Label = False
             st.subheader("Step 3: Focus on Match_Label = False")
             df_processed['Match_Label'] = df_processed['Match_Label'].apply(
-                lambda x: True if str(x).strip().lower() == 'true' else False
+                lambda x: str(x).strip().lower() == 'true'
             )
             df_false = df_processed[df_processed['Match_Label'] == False]
             st.write(f"Total False records: {len(df_false)}")
 
-            # Display False data
             with st.expander("View False Data"):
                 st.dataframe(df_false)
 
-            # Analyze Classification with highest frequency
             if 'Classification' in df_false.columns:
                 st.subheader("Most Frequent Classification in False Cases")
                 classification_count = df_false['Classification'].value_counts().reset_index()
                 classification_count.columns = ['Classification', 'Count']
-                most_frequent_classification = classification_count.iloc[0]  # Get the top row
-                st.write(f"The most frequent classification is **'{most_frequent_classification['Classification']}'** "
-                f"with **{most_frequent_classification['Count']}** occurrences.")
-
-                # Optional: Display the full classification count table
+                st.write(
+                    f"The most frequent classification is **'{classification_count.iloc[0]['Classification']}'** "
+                    f"with **{classification_count.iloc[0]['Count']}** occurrences."
+                )
                 st.write("Classification Distribution:")
                 st.dataframe(classification_count)
             else:
                 st.warning("Column 'Classification' not found in the dataset.")
 
+            # Step 4: Clustering for User Behavior
+            st.subheader("Step 4: Clustering for User Behavior")
+            features = ['Severity', 'Incident Type']
+            if all(col in df_processed.columns for col in features):
+                clustering_data = df_processed[features]
+                kmeans = KMeans(n_clusters=5, random_state=42)
+                df_processed['Cluster'] = kmeans.fit_predict(clustering_data)
 
-            # Frequent Words in Evident_data for False
-            #if 'Evident_data' in df_false.columns:
-                #st.subheader("Frequent Words in Evident_data (False)")
-                #from collections import Counter
-                #evident_words = df_false['Evident_data'].dropna().str.split().sum()
-                #word_counts = Counter(evident_words).most_common(10)
-                #word_df = pd.DataFrame(word_counts, columns=['Word', 'Count'])
+                st.write("Clustering Results:")
+                st.dataframe(df_processed[['Event User', 'Cluster']].drop_duplicates())
 
-                # Display frequent words
-                #st.dataframe(word_df)
-                #word_fig = px.bar(
-                    #word_df,
-                    #x='Word',
-                    #y='Count',
-                    #color='Count',
-                    #title="Top Words in Evident_data for False Match_Label"
-                #)
-                #st.plotly_chart(word_fig)
+                cluster_analysis = df_processed.groupby('Cluster')['Incident Type'].value_counts()
+                st.write("Cluster Analysis:")
+                st.dataframe(cluster_analysis)
 
-            # Clustering Analysis
-            st.subheader("Clustering Incident Data")
-            cluster_data = df_processed[['Event User', 'Incident Type', 'Severity', 'Occurred (UTC)']].copy()
-
-            # Create new features
-            cluster_data['Incident Count'] = cluster_data.groupby('Event User')['Event User'].transform('count')
-            cluster_data['Unique Incident Types'] = cluster_data.groupby('Event User')['Incident Type'].transform('nunique')
-            severity_mapping = {'Low': 1, 'Medium': 2, 'High': 3, 'Critical': 4}
-            cluster_data['Severity Numeric'] = cluster_data['Severity'].map(severity_mapping).fillna(0)
-
-            # Drop duplicates and unnecessary columns
-            cluster_data = cluster_data[['Event User', 'Incident Count', 'Unique Incident Types', 'Severity Numeric']].drop_duplicates()
-
-            # Standardize the data
-            scaler = StandardScaler()
-            scaled_features = scaler.fit_transform(cluster_data[['Incident Count', 'Unique Incident Types', 'Severity Numeric']])
-
-            # Perform K-Means Clustering
-            kmeans = KMeans(n_clusters=5, random_state=42)
-            cluster_data['Cluster Label'] = kmeans.fit_predict(scaled_features)
-
-            # Add Cluster Labels Back to Original Data
-            df_processed = df_processed.merge(cluster_data[['Event User', 'Cluster Label']], on='Event User', how='left')
-
-            # Step 2: Create Incident Patterns for Visualization
-            st.subheader("Visualization: Incident Patterns by Cluster")
-            incident_patterns = df_processed.groupby(['Cluster Label', 'Incident Type']).size().reset_index(name='Count')
-
-            # Display the DataFrame for verification
-            st.write("Incident Patterns by Cluster and Incident Type:")
-            st.dataframe(incident_patterns)
-
-            # Step 3: Plot the Cluster Analysis
-            st.subheader("Cluster Analysis: Incident Count by Incident Type")
-
-            # Plot the Bar Chart
-            plt.figure(figsize=(12, 6))
-            sns.barplot(
-                data=incident_patterns, 
-                x='Cluster Label',          # Use Cluster Label as X-axis
-                y='Count',                  # Use Count as Y-axis
-                hue='Incident Type',        # Color by Incident Type
-                palette='Set2'              # Use a color palette for better visualization
-            )
-            # อธิบาย Cluster Analysis
-            st.subheader("Cluster Analysis Insights")
-            cluster_summary = cluster_data.groupby('Cluster Label').agg({
-            'Incident Count': 'mean',
-            'Severity Numeric': 'mean',
-            }).reset_index()
-            cluster_summary['Risk Level'] = cluster_summary['Severity Numeric'].apply(
-            lambda x: 'High' if x > 3 else 'Medium' if x > 2 else 'Low'
-            )
-            st.write("Cluster Summary and Risk Level:")
-            st.dataframe(cluster_summary)
-
-
-            # Customize the Chart
-            plt.title("Incident Count by Cluster and Incident Type")
-            plt.xlabel("Cluster")
-            plt.ylabel("Incident Count")
-            plt.legend(title="Incident Type", bbox_to_anchor=(1.05, 1), loc='upper left')
-            st.pyplot(plt.gcf())  # Show the chart in Streamlit
-
-         # Step 4: Clustering for Behavior Analysis
-        st.subheader("Step 4: Clustering for User Behavior")
-        features = ['Severity', 'Incident Type']
-        if all(col in df_processed.columns for col in features):
-            clustering_data = df_processed[features]
-
-            # Apply KMeans clustering
-            kmeans = KMeans(n_clusters=5, random_state=42)
-            df_processed['Cluster'] = kmeans.fit_predict(clustering_data)
-
-            # Display clusters
-            st.write("Clustering Results:")
-            st.dataframe(df_processed[['Event User', 'Cluster']].drop_duplicates())
-
-            # Analyze clusters
-            cluster_analysis = df_processed.groupby('Cluster')['Incident Type'].value_counts()
-            st.write("Cluster Analysis:")
-            st.dataframe(cluster_analysis)
-
-            # Save clustering results
-            clustering_csv = os.path.join(OUTPUT_DIR, "user_behavior_clustering.csv")
-            df_processed.to_csv(clustering_csv, index=False, encoding='utf-8-sig')
-            st.success(f"Clustering analysis saved to {clustering_csv}")
-        else:
-            st.error("Required features for clustering are missing.")
-
-    except Exception as e:
-        st.error(f"Error during clustering analysis: {e}")
-else:
-    st.warning("No processed file found. Please identify incidents first.")
-
+                clustering_csv = os.path.join(OUTPUT_DIR, "user_behavior_clustering.csv")
+                df_processed.to_csv(clustering_csv, index=False, encoding='utf-8-sig')
+                st.success(f"Clustering analysis saved to {clustering_csv}")
+            else:
+                st.error("Required features for clustering are missing.")
+        except Exception as e:
+            st.error(f"Error during user behavior analysis: {e}")
+    else:
+        st.warning("No processed file found. Please identify incidents first.")
 
 # Anomaly Detection
 elif selected == "Anomaly Detection":
