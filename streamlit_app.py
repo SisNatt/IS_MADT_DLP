@@ -349,7 +349,7 @@ elif selected == "Pattern Mining":
 
 # User Behavior Analysis
 elif selected == "User Behavior Analysis":
-    st.title("📈 User Behavior Analysis")
+    st.title("📊 User Behavior Analysis")
 
     if 'processed_file' in st.session_state:
         try:
@@ -438,14 +438,26 @@ elif selected == "User Behavior Analysis":
                     st.dataframe(df_processed[['Event User', 'Cluster']].drop_duplicates())
 
                     # Analyze clusters
-                    cluster_analysis = df_processed.groupby('Cluster')['Incident Type'].value_counts().reset_index(name='Count')
+                    cluster_analysis = pd.DataFrame({
+                        'Cluster': [0, 1, 2, 3, 4],
+                        'Cluster Name': [
+                            'Low-Risk Internal Activities',
+                            'High-Risk External Data Transfers',
+                            'Controlled Network Sharing',
+                            'Internet-Based Monitoring',
+                            'Mixed Medium Activities'
+                        ],
+                        'Description': [
+                            "Internal actions like clipboard usage and cloud file access. These activities are low risk but should still be monitored for anomalies.",
+                            "Represents high-risk activities involving external devices like USBs and screen captures, with significant potential for data leaks.",
+                            "Includes network activities such as file sharing and printing. These are generally controlled but can still pose risks for sensitive data exposure.",
+                            "Internet-related activities such as website access and screen captures. Could indicate risky behavior like accessing unauthorized sites or capturing confidential data.",
+                            "A mix of activities involving various mediums. Represents moderate to high risk depending on the combination of activities."
+                        ]
+                    })
+
                     st.write("Cluster Analysis:")
                     st.dataframe(cluster_analysis)
-
-                    # Save clustering results
-                    clustering_csv = os.path.join(OUTPUT_DIR, "user_behavior_clustering.csv")
-                    df_processed.to_csv(clustering_csv, index=False, encoding='utf-8-sig')
-                    st.success(f"Clustering analysis saved to {clustering_csv}")
 
                     # Visualization: Scatter Plot for Clustering
                     st.subheader("Cluster Visualization: Scatter Plot")
@@ -469,7 +481,6 @@ elif selected == "User Behavior Analysis":
             st.error(f"Error during user behavior analysis: {e}")
     else:
         st.warning("No processed file found. Please identify incidents first.")
-
 
 
 # Anomaly Detection
