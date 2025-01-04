@@ -597,12 +597,14 @@ elif selected == "Anomaly Detection":
             st.write(f"### Most Common Severity in Anomalies: {most_common_severity}")
 
             # Visualization of Top User's Anomalies
+            incident_type_counts = top_anomalous_users[top_anomalous_users['Event User'] == top_user]['Incident Type'].value_counts().reset_index()
+            incident_type_counts.columns = ['Incident Type', 'Count']
             fig_user = px.bar(
-                top_anomalous_users[top_anomalous_users['Event User'] == top_user]['Incident Type'].value_counts().reset_index(),
-                x='index',
-                y='Incident Type',
+                incident_type_counts,
+                x='Incident Type',
+                y='Count',
                 title=f"Incident Type Distribution for Top Anomalous User: {top_user}",
-                labels={'index': 'Incident Type', 'Incident Type': 'Count'}
+                labels={'Incident Type': 'Incident Type', 'Count': 'Count'}
             )
             st.plotly_chart(fig_user)
 
@@ -614,7 +616,6 @@ elif selected == "Anomaly Detection":
                 hole=0.4
             )
             st.plotly_chart(fig_severity)
-
 
         except Exception as e:
             st.error(f"Error during anomaly detection: {e}")
