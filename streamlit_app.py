@@ -450,6 +450,27 @@ elif selected == "User Behavior Analysis":
                     )
                     st.plotly_chart(fig_scatter)
 
+                    # Visualization: Pie Chart
+                    st.subheader("Cluster Proportions: Pie Chart")
+                    fig_pie = px.pie(
+                        df_processed,
+                        names='Cluster',
+                        title="Proportion of Users in Each Cluster",
+                        hole=0.3
+                    )
+                    st.plotly_chart(fig_pie)
+
+                    # Visualization: Box Plot for Severity
+                    st.subheader("Box Plot: Severity Distribution by Cluster")
+                    fig_box = px.box(
+                        df_processed,
+                        x='Cluster',
+                        y='Severity',
+                        color='Cluster',
+                        title="Severity Distribution by Cluster"
+                    )
+                    st.plotly_chart(fig_box)
+
                     # Analyze and Describe Clusters
                     st.subheader("Cluster Descriptions")
 
