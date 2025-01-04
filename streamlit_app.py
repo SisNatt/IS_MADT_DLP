@@ -395,6 +395,7 @@ elif selected == "User Behavior Analysis":
             )
             st.plotly_chart(fig)
 
+            # Step 3: Focus on Match_Label = False
             st.subheader("Step 3: Focus on Match_Label = False")
             df_processed['Match_Label'] = df_processed['Match_Label'].apply(
                 lambda x: str(x).strip().lower() == 'true'
@@ -404,7 +405,7 @@ elif selected == "User Behavior Analysis":
 
             # Show False Data in an Expander
             with st.expander("View False Data"):
-            st.dataframe(df_false)
+                st.dataframe(df_false)
 
             if 'Classification' in df_false.columns:
                 st.subheader("Most Frequent Classification in False Cases")
@@ -421,6 +422,7 @@ elif selected == "User Behavior Analysis":
             else:
                 st.warning("Column 'Classification' not found in the dataset.")
 
+            # Step 4: Clustering for User Behavior
             st.subheader("Step 4: Clustering for User Behavior")
             features = ['Severity', 'Incident Type']
             if all(col in df_processed.columns for col in features):
@@ -438,19 +440,6 @@ elif selected == "User Behavior Analysis":
                     with st.expander("Clustering Results"):
                         st.dataframe(df_processed[['Event User', 'Cluster']].drop_duplicates())
 
-                    # Visualization: Scatter Plot for Clustering
-                    #st.subheader("Cluster Visualization: Scatter Plot")
-                    #fig_scatter = px.scatter(
-                        #df_processed,
-                        #x='Severity',
-                        #y='Incident Type',
-                        #color='Cluster',
-                        #title="Scatter Plot of Clusters",
-                        #labels={'Severity': 'Severity', 'Incident Type': 'Incident Type'},
-                        #hover_data=['Event User']
-                    #)
-                    #st.plotly_chart(fig_scatter)
-
                     # Visualization: Pie Chart
                     st.subheader("Cluster Proportions: Pie Chart")
                     fig_pie = px.pie(
@@ -461,26 +450,9 @@ elif selected == "User Behavior Analysis":
                     )
                     st.plotly_chart(fig_pie)
 
-                    # Bar Chart for Cluster Sizes
-                    #st.subheader("Cluster Distribution: Bar Chart")
-                    #cluster_sizes = df_processed['Cluster'].value_counts().reset_index()
-                    #cluster_sizes.columns = ['Cluster', 'Count']
-
-                    #fig_bar_sizes = px.bar(
-                        #cluster_sizes,
-                        #x='Cluster',
-                        #y='Count',
-                        #title="Number of Users in Each Cluster",
-                        #labels={'Cluster': 'Cluster', 'Count': 'Number of Users'},
-                        #text='Count'
-                    #)
-                    fig_bar_sizes.update_traces(texttemplate='%{text}', textposition='outside')
-                    st.plotly_chart(fig_bar_sizes)
-
-                    Bar Chart for Incident Type Distribution
+                    # Visualization: Incident Type Distribution by Cluster
                     st.subheader("Incident Type Distribution by Cluster")
                     incident_type_distribution = df_processed.groupby(['Cluster', 'Incident Type']).size().reset_index(name='Count')
-
                     fig_bar_incidents = px.bar(
                         incident_type_distribution,
                         x='Cluster',
@@ -494,31 +466,29 @@ elif selected == "User Behavior Analysis":
 
                     # Analyze and Describe Clusters
                     st.subheader("Cluster Descriptions")
-
                     st.markdown(
                         """
                         - **Cluster 0: Low-Risk Internal Activities**
-                          - Internal actions like clipboard usage and cloud file access. These activities are low risk but should still be monitored for anomalies.
+                          - Internal actions like clipboard usage and cloud file access.
                           - **Examples:** Clipboard, Cloud, Application File Access.
 
                         - **Cluster 1: High-Risk External Data Transfers**
-                          - Represents high-risk activities involving external devices like USBs and screen captures, with significant potential for data leaks.
+                          - Activities like USB transfers and screen captures.
                           - **Examples:** Removable Storage, Screen Capture.
 
                         - **Cluster 2: Controlled Network Sharing**
-                          - Includes network activities such as file sharing and printing. These are generally controlled but can still pose risks for sensitive data exposure.
+                          - Network activities such as file sharing and printing.
                           - **Examples:** Printer, Network Share.
 
                         - **Cluster 3: Internet-Based Monitoring**
-                          - Internet-related activities such as website access and screen captures. Could indicate risky behavior like accessing unauthorized sites or capturing confidential data.
+                          - Internet-related activities like accessing websites and capturing screens.
                           - **Examples:** Website, Screen Capture.
 
                         - **Cluster 4: Mixed Medium Activities**
-                          - A mix of activities involving various mediums. Represents moderate to high risk depending on the combination of activities.
+                          - A mix of medium-based activities.
                           - **Examples:** Removable Storage, Printer, Network Share, Screen Capture.
                         """
                     )
-
                 except Exception as e:
                     st.error(f"Error during clustering: {e}")
             else:
@@ -528,7 +498,6 @@ elif selected == "User Behavior Analysis":
             st.error(f"Error during user behavior analysis: {e}")
     else:
         st.warning("No processed file found. Please identify incidents first.")
-
 
 # Anomaly Detection
 elif selected == "Anomaly Detection":
