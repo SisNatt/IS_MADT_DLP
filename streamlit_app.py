@@ -102,8 +102,8 @@ if selected == "Home - Raw Data":
                 st.error(f"Error preprocessing raw data: {e}")
                 
         # Process 1: Process Incidents (Existing Method)
-        st.subheader("Step 2: Process Incidents")
-        if st.button("Process Incidents (Existing Method)"):
+        st.subheader("Step 2: Labeling Log")
+        if st.button("Label Process"):
             try:
                 # Load preprocessed data
                 if 'preprocessed_file' in st.session_state:
