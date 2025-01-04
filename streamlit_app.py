@@ -437,28 +437,6 @@ elif selected == "User Behavior Analysis":
                     st.write("Clustering Results:")
                     st.dataframe(df_processed[['Event User', 'Cluster']].drop_duplicates())
 
-                    # Analyze clusters
-                    cluster_analysis = pd.DataFrame({
-                        'Cluster': [0, 1, 2, 3, 4],
-                        'Cluster Name': [
-                            'Low-Risk Internal Activities',
-                            'High-Risk External Data Transfers',
-                            'Controlled Network Sharing',
-                            'Internet-Based Monitoring',
-                            'Mixed Medium Activities'
-                        ],
-                        'Description': [
-                            "Internal actions like clipboard usage and cloud file access. These activities are low risk but should still be monitored for anomalies.",
-                            "Represents high-risk activities involving external devices like USBs and screen captures, with significant potential for data leaks.",
-                            "Includes network activities such as file sharing and printing. These are generally controlled but can still pose risks for sensitive data exposure.",
-                            "Internet-related activities such as website access and screen captures. Could indicate risky behavior like accessing unauthorized sites or capturing confidential data.",
-                            "A mix of activities involving various mediums. Represents moderate to high risk depending on the combination of activities."
-                        ]
-                    })
-
-                    st.write("Cluster Analysis:")
-                    st.dataframe(cluster_analysis)
-
                     # Visualization: Scatter Plot for Clustering
                     st.subheader("Cluster Visualization: Scatter Plot")
                     fig_scatter = px.scatter(
@@ -471,6 +449,33 @@ elif selected == "User Behavior Analysis":
                         hover_data=['Event User']
                     )
                     st.plotly_chart(fig_scatter)
+
+                    # Analyze and Describe Clusters
+                    st.subheader("Cluster Descriptions")
+
+                    st.markdown(
+                        """
+                        - **Cluster 0: Low-Risk Internal Activities**
+                          - Internal actions like clipboard usage and cloud file access. These activities are low risk but should still be monitored for anomalies.
+                          - **Examples:** Clipboard, Cloud, Application File Access.
+
+                        - **Cluster 1: High-Risk External Data Transfers**
+                          - Represents high-risk activities involving external devices like USBs and screen captures, with significant potential for data leaks.
+                          - **Examples:** Removable Storage, Screen Capture.
+
+                        - **Cluster 2: Controlled Network Sharing**
+                          - Includes network activities such as file sharing and printing. These are generally controlled but can still pose risks for sensitive data exposure.
+                          - **Examples:** Printer, Network Share.
+
+                        - **Cluster 3: Internet-Based Monitoring**
+                          - Internet-related activities such as website access and screen captures. Could indicate risky behavior like accessing unauthorized sites or capturing confidential data.
+                          - **Examples:** Website, Screen Capture.
+
+                        - **Cluster 4: Mixed Medium Activities**
+                          - A mix of activities involving various mediums. Represents moderate to high risk depending on the combination of activities.
+                          - **Examples:** Removable Storage, Printer, Network Share, Screen Capture.
+                        """
+                    )
 
                 except Exception as e:
                     st.error(f"Error during clustering: {e}")
