@@ -471,6 +471,32 @@ elif selected == "User Behavior Analysis":
                     )
                     st.plotly_chart(fig_box)
 
+                    # Visualization: Bar Plot of Cluster Counts
+                    st.subheader("Cluster Distribution")
+                    cluster_counts = df_processed['Cluster'].value_counts().reset_index()
+                    cluster_counts.columns = ['Cluster', 'Count']
+                    fig_bar = px.bar(
+                        cluster_counts,
+                        x='Cluster',
+                        y='Count',
+                        title="Number of Users in Each Cluster",
+                        labels={'Cluster': 'Cluster', 'Count': 'Number of Users'}
+                    )
+                    st.plotly_chart(fig_bar)
+
+                    # Visualization: Incident Type by Cluster
+                    st.subheader("Incident Type Distribution by Cluster")
+                    fig_incident = px.bar(
+                        cluster_analysis,
+                        x='Cluster',
+                        y='Count',
+                        color='Incident Type',
+                        title="Incident Types by Cluster",
+                        labels={'Cluster': 'Cluster', 'Count': 'Number of Incidents'}
+                    )
+                    st.plotly_chart(fig_incident)
+
+
                     # Analyze and Describe Clusters
                     st.subheader("Cluster Descriptions")
 
