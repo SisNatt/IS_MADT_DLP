@@ -124,9 +124,9 @@ if selected == "Home - Raw Data":
                 def check_evidence_match(row):
                     evidence = str(row['Evident_data']).lower().strip()
                     for word in matching_words:
-                    if word in evidence:
-                    return "True"
-                return "False"
+                        if word in evidence:
+                            return "True"
+                    return "False"
 
             # Apply the labeling function to the dataset
             df_raw['Match_Label'] = df_raw.apply(check_evidence_match, axis=1)
