@@ -210,7 +210,7 @@ elif selected == "View Processed Data":
 elif selected == "Pattern Mining":
     st.title("🔍 Pattern Mining for Incidents")
 
-      if 'labeled_file' in st.session_state:
+       if 'labeled_file' in st.session_state:  # Adjusted indentation here
         try:
             df_processed = pd.read_csv(st.session_state['labeled_file'], encoding='utf-8-sig')
             if 'Incident Type' in df_processed.columns:
@@ -218,41 +218,41 @@ elif selected == "Pattern Mining":
                 frequent_patterns = apriori(df_processed[['Incident Type']], min_support=0.1, use_colnames=True)
                 st.dataframe(frequent_patterns)
                 
-            # Incident Trends and Patterns
-            st.subheader("Incident Trends and Patterns")
+                # Incident Trends and Patterns
+                st.subheader("Incident Trends and Patterns")
 
-            # Convert 'Occurred (UTC)' to datetime format
-            df_processed['Occurred (UTC)'] = pd.to_datetime(df_processed['Occurred (UTC)'])
+                # Convert 'Occurred (UTC)' to datetime format
+                df_processed['Occurred (UTC)'] = pd.to_datetime(df_processed['Occurred (UTC)'])
 
-            # Weekly Trend Analysis
-            df_processed['Week'] = df_processed['Occurred (UTC)'].dt.to_period('W').astype(str)
-            weekly_trends = df_processed.groupby(['Week', 'Severity']).size().reset_index(name='Incident Count')
-            overall_weekly_trends = weekly_trends.groupby('Week')['Incident Count'].sum().reset_index()
+                # Weekly Trend Analysis
+                df_processed['Week'] = df_processed['Occurred (UTC)'].dt.to_period('W').astype(str)
+                weekly_trends = df_processed.groupby(['Week', 'Severity']).size().reset_index(name='Incident Count')
+                overall_weekly_trends = weekly_trends.groupby('Week')['Incident Count'].sum().reset_index()
 
-            # Combined Weekly Incident Chart
-            st.subheader("Combined Weekly Incidents and Trend")
-            fig_combined = px.bar(
-                weekly_trends,
-                x='Week',
-                y='Incident Count',
-                color='Severity',
-                title="Weekly Incidents by Severity with Overall Trend",
-                labels={'Week': 'Week', 'Incident Count': 'Number of Incidents', 'Severity': 'Severity'},
-                barmode='stack'
-            )
+                # Combined Weekly Incident Chart
+                st.subheader("Combined Weekly Incidents and Trend")
+                fig_combined = px.bar(
+                    weekly_trends,
+                    x='Week',
+                    y='Incident Count',
+                    color='Severity',
+                    title="Weekly Incidents by Severity with Overall Trend",
+                    labels={'Week': 'Week', 'Incident Count': 'Number of Incidents', 'Severity': 'Severity'},
+                    barmode='stack'
+                )
 
-            # Add overall trend line to the combined chart
-            fig_combined.add_scatter(
-                x=overall_weekly_trends['Week'],
-                y=overall_weekly_trends['Incident Count'],
-                mode='lines+markers',
-                name='Overall Trend',
-                line=dict(color='black', width=2)
-            )
+                # Add overall trend line to the combined chart
+                fig_combined.add_scatter(
+                    x=overall_weekly_trends['Week'],
+                    y=overall_weekly_trends['Incident Count'],
+                    mode='lines+markers',
+                    name='Overall Trend',
+                    line=dict(color='black', width=2)
+                )
 
-            # Show combined chart
-            st.plotly_chart(fig_combined)
-
+                # Show combined chart
+                st.plotly_chart(fig_combined)
+                
             # Analysis for Weekly Trends
             st.subheader("Analysis of Weekly Trends")
             max_week = overall_weekly_trends.loc[overall_weekly_trends['Incident Count'].idxmax()]
