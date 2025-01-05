@@ -1,6 +1,7 @@
 import streamlit as st
 from streamlit_option_menu import option_menu
 import pandas as pd
+import re
 import os
 from datetime import datetime
 from mlxtend.frequent_patterns import apriori, association_rules
