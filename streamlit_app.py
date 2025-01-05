@@ -101,82 +101,47 @@ if selected == "Home - Raw Data":
             except Exception as e:
                 st.error(f"Error preprocessing raw data: {e}")
                 
-        # Labeling Process
-        st.subheader("Step 2: Labeling Logs")
-        if st.button("Label Process"):
+        st.subheader("📌 Step 2: Label Matching")
+        if st.button("Label Data"):
             try:
-                # Load dictionary
                 df_dictionary = pd.read_csv(DICTIONARY_FILE, encoding='utf-8-sig')
-
-                # Preprocess dictionary words
-                def preprocess_text(text):
-                    return re.sub(r'[^a-zA-Z0-9\s]', '', str(text)).lower().strip()
-
-                matching_words = set(df_dictionary['Word'].apply(preprocess_text))
-
-                # Debugging output
-                st.write("First 10 Matching Words:")
-                st.write(list(matching_words)[:10])
-
-                # Preprocess Evident_data
-                df_raw['Evident_data_clean'] = df_raw['Evident_data'].apply(preprocess_text)
-
-                # Check matches
+                matching_words = set(df_dictionary['Word'].str.lower().str.strip())
                 def check_evidence_match(row):
-                    evident_data_words = row['Evident_data_clean'].split()
-                    for word in matching_words:
-                        if word in evident_data_words:
-                            return 'True'
-                    return 'False'
+                    if 'Evident_data' in row:
+                        evidence = str(row['Evident_data']).lower().strip()
+                        return any(word in evidence for word in matching_words)
+                    return False
 
-                if 'Evident_data' not in df_raw.columns:
-                    st.error("Column 'Evident_data' not found in the dataset.")
-                else:
+                if 'Evident_data' in df_raw.columns:
                     df_raw['Match_Label'] = df_raw.apply(check_evidence_match, axis=1)
-
-                    # Save labeled data
-                    today = datetime.now().strftime("%d%m%y")
-                    existing_files = [f for f in os.listdir(OUTPUT_DIR) if f.startswith(f"incident_log_with_match_{today}")]
-                    running_number = len(existing_files) + 1
-                    output_file = f"{OUTPUT_DIR}/incident_log_with_match_{today}_{running_number:03d}.csv"
-                    df_raw.to_csv(output_file, index=False, encoding='utf-8-sig')
-
-                    st.success(f"Processed file saved as '{output_file}'")
-                    st.write("Sample Processed Data:")
-                    st.dataframe(df_raw[['Evident_data', 'Match_Label']].head())
-                    
+                    labeled_file = os.path.join(OUTPUT_DIR, "labeled_data.csv")
+                    df_raw.to_csv(labeled_file, index=False, encoding='utf-8-sig')
+                    st.session_state['labeled_file'] = labeled_file
+                    st.success(f"Labeled data saved at: {labeled_file}")
+                else:
+                    st.error("Column 'Evident_data' not found in the raw data.")
             except Exception as e:
-                st.error(f"Error processing incidents: {e}")
+                st.error(f"Error during labeling: {e}")
 
     except Exception as e:
         st.error(f"Error loading raw data: {e}")
 
 # Page 2: View Processed Data
 elif selected == "View Processed Data":
-    st.title("📊 View Processed Data with Match_Label Filter")
-
-    if 'processed_file' in st.session_state:
+    st.title("📊 View Processed Data")
+    if 'labeled_file' in st.session_state:
         try:
-            # Load the processed file
-            processed_file = st.session_state['processed_file']
-            df_processed = pd.read_csv(processed_file, encoding='utf-8-sig')
+            df_processed = pd.read_csv(st.session_state['labeled_file'], encoding='utf-8-sig')
             st.write(f"Total records: {len(df_processed)}")
+            st.dataframe(df_processed)
 
-            with st.expander("View Processed Data"):
-                st.dataframe(df_processed)
-
-             # เพิ่มส่วนดาวน์โหลดรายงาน
-            st.subheader("Download Actionable Report")
-            output_file_path = os.path.join(OUTPUT_DIR, "DLP_Insights_Report.csv")
-            df_processed.to_csv(output_file_path, index=False, encoding='utf-8-sig')
-
-            with open(output_file_path, "rb") as file:
-                btn = st.download_button(
-                    label="Download Report",
-                    data=file,
-                    file_name="DLP_Insights_Report.csv",
-                    mime="text/csv"
-                )
+            st.subheader("📥 Download Processed Data")
+            st.download_button(
+                label="Download CSV",
+                data=df_processed.to_csv(index=False).encode('utf-8-sig'),
+                file_name="processed_data.csv",
+                mime="text/csv"
+            )
 
             # Check if Match_Label exists
             if 'Match_Label' in df_processed.columns:
@@ -245,16 +210,14 @@ elif selected == "View Processed Data":
 elif selected == "Pattern Mining":
     st.title("🔍 Pattern Mining for Incidents")
 
-    if 'processed_file' in st.session_state:
+      if 'labeled_file' in st.session_state:
         try:
-            # Load processed file
-            processed_file = st.session_state['processed_file']
-            df_processed = pd.read_csv(processed_file, encoding='utf-8-sig')
-
-            if 'Incident Type' not in df_processed.columns:
-                st.error("The column 'Incident Type' is not available in the processed data.")
-                st.stop()
-
+            df_processed = pd.read_csv(st.session_state['labeled_file'], encoding='utf-8-sig')
+            if 'Incident Type' in df_processed.columns:
+                st.subheader("📊 Frequent Patterns")
+                frequent_patterns = apriori(df_processed[['Incident Type']], min_support=0.1, use_colnames=True)
+                st.dataframe(frequent_patterns)
+                
             # Incident Trends and Patterns
             st.subheader("Incident Trends and Patterns")
 
@@ -354,12 +317,12 @@ elif selected == "Pattern Mining":
 # User Behavior Analysis
 elif selected == "User Behavior Analysis":
     st.title("📊 User Behavior Analysis")
-
-    if 'processed_file' in st.session_state:
+    if 'labeled_file' in st.session_state:
         try:
-            # Load the processed file
-            processed_file = st.session_state['processed_file']
-            df_processed = pd.read_csv(processed_file, encoding='utf-8-sig')
+            df_processed = pd.read_csv(st.session_state['labeled_file'], encoding='utf-8-sig')
+            st.subheader("📈 User Behavior Metrics")
+            user_behavior = df_processed.groupby('Event User')['Match_Label'].value_counts()
+            st.dataframe(user_behavior)
 
             # Step 1: User Behavior Profile
             st.subheader("Step 1: User Behavior Profile")
@@ -508,12 +471,16 @@ elif selected == "User Behavior Analysis":
 # Anomaly Detection
 elif selected == "Anomaly Detection":
     st.title("🚨 Anomaly Detection")
-
-    if 'processed_file' in st.session_state:
+    if 'labeled_file' in st.session_state:
         try:
-            # Load processed file from session state
-            processed_file = st.session_state['processed_file']
-            df_processed = pd.read_csv(processed_file, encoding='utf-8-sig')
+            df_processed = pd.read_csv(st.session_state['labeled_file'], encoding='utf-8-sig')
+            if 'Incident Count' in df_processed.columns:
+                st.subheader("📈 Isolation Forest Anomaly Detection")
+                scaler = StandardScaler()
+                features = scaler.fit_transform(df_processed[['Incident Count']])
+                model = IsolationForest(contamination=0.05, random_state=42)
+                df_processed['Anomaly'] = model.fit_predict(features)
+                st.dataframe(df_processed[['Event User', 'Anomaly']])
 
             st.subheader("Step 1: Data Preparation for Anomaly Detection")
             df_processed['Incident Count'] = df_processed.groupby('Event User')['Event User'].transform('count')
