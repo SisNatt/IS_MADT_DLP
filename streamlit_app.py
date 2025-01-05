@@ -135,8 +135,8 @@ if selected == "Home - Raw Data":
                 st.write("Preview of Labeled Data:")
                 st.dataframe(df_raw[['Evident_data', 'Match_Label']].head())
 
-        except Exception as e:
-            st.error(f"Error during labeling: {e}")
+    except Exception as e:
+        st.error(f"Error during labeling: {e}")
 
 
 # Page 2: View Processed Data
