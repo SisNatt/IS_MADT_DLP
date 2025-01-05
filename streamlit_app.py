@@ -101,10 +101,11 @@ if selected == "Home - Raw Data":
             except Exception as e:
                 st.error(f"Error preprocessing raw data: {e}")
                 
+        # Step 2: Label Matching
         st.subheader("📌 Step 2: Label Matching")
         if st.button("Label Data"):
             try:
-                # Load the dictionary file
+                # Load dictionary file
                 df_dictionary = pd.read_csv(DICTIONARY_FILE, encoding='utf-8-sig')
 
                 # Ensure the dictionary file has a 'Word' column
@@ -112,41 +113,37 @@ if selected == "Home - Raw Data":
                     st.error("The dictionary file must contain a 'Word' column.")
                     st.stop()
 
-                # Convert words in the dictionary to lowercase and strip whitespace
+                # Preprocess dictionary words
                 matching_words = set(df_dictionary['Word'].str.lower().str.strip())
 
-                # Check if the 'Evident_data' column exists in the raw data
+                # Check if 'Evident_data' exists in the raw data
                 if 'Evident_data' not in df_raw.columns:
                     st.error("Column 'Evident_data' not found in the raw data.")
                     st.stop()
 
-                # Function to label rows based on matching words
+                # Function to label rows
                 def check_evidence_match(row):
                     evidence = str(row['Evident_data']).lower().strip()
-                    for word in matching_words:
-                        if word in evidence:
-                            return "True"
-                    return "False"
+                    return "True" if any(word in evidence for word in matching_words) else "False"
 
-            # Apply the labeling function to the dataset
-            df_raw['Match_Label'] = df_raw.apply(check_evidence_match, axis=1)
+                # Apply the labeling function
+                df_raw['Match_Label'] = df_raw.apply(check_evidence_match, axis=1)
 
-            # Save the labeled data to a new file
-            labeled_file = os.path.join(OUTPUT_DIR, "labeled_data.csv")
-            df_raw.to_csv(labeled_file, index=False, encoding='utf-8-sig')
-            st.session_state['labeled_file'] = labeled_file
+                # Save the labeled data
+                labeled_file = os.path.join(OUTPUT_DIR, "labeled_data.csv")
+                df_raw.to_csv(labeled_file, index=False, encoding='utf-8-sig')
+                st.session_state['labeled_file'] = labeled_file
 
-            st.success(f"Labeled data saved at: {labeled_file}")
+                st.success(f"Labeled data saved at: {labeled_file}")
 
-            # Display a preview of the labeled data
-            st.write("Preview of Labeled Data:")
-            st.dataframe(df_raw[['Evident_data', 'Match_Label']].head())
-        else:
-            st.error("Column 'Evident_data' not found in the raw data.")
+                # Display a preview of labeled data
+                st.write("Preview of Labeled Data:")
+                st.dataframe(df_raw[['Evident_data', 'Match_Label']].head())
+
+            except Exception as e:
+                st.error(f"Error during labeling: {e}")
+
     except Exception as e:
-            st.error(f"Error during labeling: {e}")
-
-except Exception as e:
         st.error(f"Error loading raw data: {e}")
 
 # Page 2: View Processed Data
