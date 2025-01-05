@@ -210,7 +210,7 @@ elif selected == "View Processed Data":
 elif selected == "Pattern Mining":
     st.title("🔍 Pattern Mining for Incidents")
 
-       if 'labeled_file' in st.session_state:  # Adjusted indentation here
+    if 'labeled_file' in st.session_state:  # Adjusted indentation here
         try:
             df_processed = pd.read_csv(st.session_state['labeled_file'], encoding='utf-8-sig')
             if 'Incident Type' in df_processed.columns:
