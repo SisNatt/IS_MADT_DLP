@@ -121,13 +121,8 @@ if selected == "Home - Raw Data":
                     st.error("Column 'Evident_data' not found in the raw data.")
                     st.stop()
 
-                # Function to label rows
-                def check_evidence_match(row):
-                    evidence = str(row['Evident_data']).lower().strip()
-                    return "True" if any(word in evidence for word in matching_words) else "False"
-
                 # Apply the labeling function
-                df_raw['Match_Label'] = df_raw.apply(check_evidence_match, axis=1)
+                df_raw['Match_Label'] = df_raw.apply(check_evidence_match, axis=1, matching_words=matching_words)
 
                 # Save the labeled data
                 labeled_file = os.path.join(OUTPUT_DIR, "labeled_data.csv")
@@ -140,11 +135,9 @@ if selected == "Home - Raw Data":
                 st.write("Preview of Labeled Data:")
                 st.dataframe(df_raw[['Evident_data', 'Match_Label']].head())
 
-            except Exception as e:
-                st.error(f"Error during labeling: {e}")
+        except Exception as e:
+            st.error(f"Error during labeling: {e}")
 
-    except Exception as e:
-        st.error(f"Error loading raw data: {e}")
 
 # Page 2: View Processed Data
 elif selected == "View Processed Data":
