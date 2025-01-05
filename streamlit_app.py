@@ -1,7 +1,6 @@
 import streamlit as st
 from streamlit_option_menu import option_menu
 import pandas as pd
-import re
 import os
 from datetime import datetime
 from mlxtend.frequent_patterns import apriori, association_rules
@@ -15,8 +14,9 @@ from sklearn.ensemble import IsolationForest
 from collections import Counter
 from sklearn.preprocessing import LabelEncoder  # Add this line
 
+
 # File paths
-INCIDENT_FILE = "https://drive.google.com/uc?id=1NiDi3MOJi9nmThqmncOzpto1vpEcPbGd"
+INCIDENT_FILE = "https://drive.google.com/uc?id=1ueLKSgaNhvPEAjJsqad4iMcDfxsM8Nie"
 DICTIONARY_FILE = "https://drive.google.com/uc?id=1RF7pbtpx9OjiqKhASwjxmpJfHHP9ulkv"
 OUTPUT_DIR = "./output_files"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
@@ -101,75 +101,80 @@ if selected == "Home - Raw Data":
             except Exception as e:
                 st.error(f"Error preprocessing raw data: {e}")
                 
-        # Step 2: Label Matching
-        st.subheader("📌 Step 2: Label Matching")
-        if st.button("Label Data"):
+        # Process 1: Process Incidents (Existing Method)
+        st.subheader("Step 2: Labeling Log")
+        if st.button("Label Process"):
             try:
-                # Load dictionary file
+                # Load preprocessed data
+                if 'preprocessed_file' in st.session_state:
+                    df_raw = pd.read_csv(st.session_state['preprocessed_file'], encoding='utf-8-sig')
+
+                # Load dictionary
                 df_dictionary = pd.read_csv(DICTIONARY_FILE, encoding='utf-8-sig')
 
-                # ตรวจสอบว่าคอลัมน์ 'Word' มีใน dictionary file หรือไม่
-                if 'Word' not in df_dictionary.columns:
-                    st.error("The dictionary file must contain a 'Word' column.")
-                    st.stop()
-
-                # แปลงคำใน dictionary เป็นตัวพิมพ์เล็ก และตัดช่องว่าง
+                # Define matching words
                 matching_words = set(df_dictionary['Word'].str.lower().str.strip())
 
-                # ตรวจสอบว่าคอลัมน์ 'Evident_data' มีใน raw data หรือไม่
+                def check_evidence_match(row):
+                    """Check if words in 'Evident_data' match the dictionary."""
+                    evident_data = str(row['Evident_data']).lower().strip()
+                    for word in matching_words:
+                        if word in evident_data:
+                            return 'True'
+                    return 'False'
+
+                # Validate 'Evident_data' column
                 if 'Evident_data' not in df_raw.columns:
-                    st.error("Column 'Evident_data' not found in the raw data.")
+                    st.error("Column 'Evident_data' not found in the dataset.")
                     st.stop()
 
-                # ฟังก์ชันสำหรับตรวจสอบว่ามีคำตรงกันใน Evident_data หรือไม่
-                def check_evidence_match(row):
-                    evidence = str(row['Evident_data']).lower().strip()
-                    for word in matching_words:
-                        if word in evidence:
-                            return "True"
-                    return "False"
-
-                # ประยุกต์ฟังก์ชันเพื่อสร้าง Match_Label
+                # Apply the matching function
                 df_raw['Match_Label'] = df_raw.apply(check_evidence_match, axis=1)
 
-                # บันทึกไฟล์ที่มีการใส่ Label แล้ว
-                labeled_file = os.path.join(OUTPUT_DIR, "labeled_data.csv")
-                df_raw.to_csv(labeled_file, index=False, encoding='utf-8-sig')
-                st.session_state['labeled_file'] = labeled_file
+                # Save processed file
+                today = datetime.now().strftime("%d%m%y")
+                existing_files = [f for f in os.listdir(OUTPUT_DIR) if f.startswith(f"incident_log_with_match_{today}")]
+                running_number = len(existing_files) + 1
+                output_file = f"{OUTPUT_DIR}/incident_log_with_match_{today}_{running_number:03d}.csv"
+                df_raw.to_csv(output_file, index=False, encoding='utf-8-sig')
 
-                st.success(f"Labeled data saved at: {labeled_file}")
-
-                # แสดงตัวอย่างข้อมูลที่มีการใส่ Match_Label
-                st.write("Preview of Labeled Data:")
-                st.dataframe(df_raw[['Evident_data', 'Match_Label']].head())
-
+                # Save processed file to session state
+                st.session_state['processed_file'] = output_file
+                st.success(f"Processed file saved as '{output_file}'")
             except Exception as e:
-                st.error(f"Error during labeling: {e}")
+                st.error(f"Error processing incidents: {e}")
+
+    except Exception as e:
+        st.error(f"Error loading raw data: {e}")
 
 # Page 2: View Processed Data
 elif selected == "View Processed Data":
-    st.title("📊 View Processed Data")
-    
-    if 'labeled_file' in st.session_state:
+    st.title("📊 View Processed Data with Match_Label Filter")
+
+    if 'processed_file' in st.session_state:
         try:
-            # Load labeled data
-            df_processed = pd.read_csv(st.session_state['labeled_file'], encoding='utf-8-sig')
+            # Load the processed file
+            processed_file = st.session_state['processed_file']
+            df_processed = pd.read_csv(processed_file, encoding='utf-8-sig')
             st.write(f"Total records: {len(df_processed)}")
-            
-            # Collapsible section for raw processed data
-            with st.expander("View Full Processed Data"):
+
+            with st.expander("View Processed Data"):
                 st.dataframe(df_processed)
 
-            # Download button for processed data
-            st.subheader("📥 Download Processed Data")
-            st.download_button(
-                label="Download CSV",
-                data=df_processed.to_csv(index=False).encode('utf-8-sig'),
-                file_name="processed_data.csv",
-                mime="text/csv"
-            )
+             # เพิ่มส่วนดาวน์โหลดรายงาน
+            st.subheader("Download Actionable Report")
+            output_file_path = os.path.join(OUTPUT_DIR, "DLP_Insights_Report.csv")
+            df_processed.to_csv(output_file_path, index=False, encoding='utf-8-sig')
 
-            # Filter for Match_Label
+            with open(output_file_path, "rb") as file:
+                btn = st.download_button(
+                    label="Download Report",
+                    data=file,
+                    file_name="DLP_Insights_Report.csv",
+                    mime="text/csv"
+                )
+
+            # Check if Match_Label exists
             if 'Match_Label' in df_processed.columns:
                 st.subheader("Filter by Match_Label")
                 match_label_filter = st.radio(
@@ -178,15 +183,20 @@ elif selected == "View Processed Data":
                     index=0
                 )
 
-                # Apply Match_Label filter
+                # Apply the matching function to ensure Match_Label is valid
+                df_processed['Match_Label'] = df_processed['Match_Label'].apply(
+                    lambda x: True if str(x).strip().lower() == 'true' else False
+                )
+
+                # Apply filter
                 if match_label_filter == 'All':
                     df_filtered = df_processed
                 elif match_label_filter == 'True':
-                    df_filtered = df_processed[df_processed['Match_Label'] == "True"]
+                    df_filtered = df_processed[df_processed['Match_Label'] == True]
                 elif match_label_filter == 'False':
-                    df_filtered = df_processed[df_processed['Match_Label'] == "False"]
+                    df_filtered = df_processed[df_processed['Match_Label'] == False]
 
-                # Display filtered data in collapsible view
+                # Display filtered data
                 st.write(f"Filtered records: {len(df_filtered)}")
                 with st.expander("View Filtered Data"):
                     st.dataframe(df_filtered)
@@ -222,7 +232,6 @@ elif selected == "View Processed Data":
                     st.error("Column 'Incident Type' not found in the processed dataset.")
             else:
                 st.error("Column 'Match_Label' does not exist in the dataset.")
-
         except Exception as e:
             st.error(f"Error loading processed data: {e}")
     else:
@@ -232,49 +241,51 @@ elif selected == "View Processed Data":
 elif selected == "Pattern Mining":
     st.title("🔍 Pattern Mining for Incidents")
 
-    if 'labeled_file' in st.session_state:  # Adjusted indentation here
+    if 'processed_file' in st.session_state:
         try:
-            df_processed = pd.read_csv(st.session_state['labeled_file'], encoding='utf-8-sig')
-            if 'Incident Type' in df_processed.columns:
-                st.subheader("📊 Frequent Patterns")
-                frequent_patterns = apriori(df_processed[['Incident Type']], min_support=0.1, use_colnames=True)
-                st.dataframe(frequent_patterns)
-                
-                # Incident Trends and Patterns
-                st.subheader("Incident Trends and Patterns")
+            # Load processed file
+            processed_file = st.session_state['processed_file']
+            df_processed = pd.read_csv(processed_file, encoding='utf-8-sig')
 
-                # Convert 'Occurred (UTC)' to datetime format
-                df_processed['Occurred (UTC)'] = pd.to_datetime(df_processed['Occurred (UTC)'])
+            if 'Incident Type' not in df_processed.columns:
+                st.error("The column 'Incident Type' is not available in the processed data.")
+                st.stop()
 
-                # Weekly Trend Analysis
-                df_processed['Week'] = df_processed['Occurred (UTC)'].dt.to_period('W').astype(str)
-                weekly_trends = df_processed.groupby(['Week', 'Severity']).size().reset_index(name='Incident Count')
-                overall_weekly_trends = weekly_trends.groupby('Week')['Incident Count'].sum().reset_index()
+            # Incident Trends and Patterns
+            st.subheader("Incident Trends and Patterns")
 
-                # Combined Weekly Incident Chart
-                st.subheader("Combined Weekly Incidents and Trend")
-                fig_combined = px.bar(
-                    weekly_trends,
-                    x='Week',
-                    y='Incident Count',
-                    color='Severity',
-                    title="Weekly Incidents by Severity with Overall Trend",
-                    labels={'Week': 'Week', 'Incident Count': 'Number of Incidents', 'Severity': 'Severity'},
-                    barmode='stack'
-                )
+            # Convert 'Occurred (UTC)' to datetime format
+            df_processed['Occurred (UTC)'] = pd.to_datetime(df_processed['Occurred (UTC)'])
 
-                # Add overall trend line to the combined chart
-                fig_combined.add_scatter(
-                    x=overall_weekly_trends['Week'],
-                    y=overall_weekly_trends['Incident Count'],
-                    mode='lines+markers',
-                    name='Overall Trend',
-                    line=dict(color='black', width=2)
-                )
+            # Weekly Trend Analysis
+            df_processed['Week'] = df_processed['Occurred (UTC)'].dt.to_period('W').astype(str)
+            weekly_trends = df_processed.groupby(['Week', 'Severity']).size().reset_index(name='Incident Count')
+            overall_weekly_trends = weekly_trends.groupby('Week')['Incident Count'].sum().reset_index()
 
-                # Show combined chart
-                st.plotly_chart(fig_combined)
-                
+            # Combined Weekly Incident Chart
+            st.subheader("Combined Weekly Incidents and Trend")
+            fig_combined = px.bar(
+                weekly_trends,
+                x='Week',
+                y='Incident Count',
+                color='Severity',
+                title="Weekly Incidents by Severity with Overall Trend",
+                labels={'Week': 'Week', 'Incident Count': 'Number of Incidents', 'Severity': 'Severity'},
+                barmode='stack'
+            )
+
+            # Add overall trend line to the combined chart
+            fig_combined.add_scatter(
+                x=overall_weekly_trends['Week'],
+                y=overall_weekly_trends['Incident Count'],
+                mode='lines+markers',
+                name='Overall Trend',
+                line=dict(color='black', width=2)
+            )
+
+            # Show combined chart
+            st.plotly_chart(fig_combined)
+
             # Analysis for Weekly Trends
             st.subheader("Analysis of Weekly Trends")
             max_week = overall_weekly_trends.loc[overall_weekly_trends['Incident Count'].idxmax()]
@@ -339,12 +350,12 @@ elif selected == "Pattern Mining":
 # User Behavior Analysis
 elif selected == "User Behavior Analysis":
     st.title("📊 User Behavior Analysis")
-    if 'labeled_file' in st.session_state:
+
+    if 'processed_file' in st.session_state:
         try:
-            df_processed = pd.read_csv(st.session_state['labeled_file'], encoding='utf-8-sig')
-            st.subheader("📈 User Behavior Metrics")
-            user_behavior = df_processed.groupby('Event User')['Match_Label'].value_counts()
-            st.dataframe(user_behavior)
+            # Load the processed file
+            processed_file = st.session_state['processed_file']
+            df_processed = pd.read_csv(processed_file, encoding='utf-8-sig')
 
             # Step 1: User Behavior Profile
             st.subheader("Step 1: User Behavior Profile")
@@ -493,16 +504,12 @@ elif selected == "User Behavior Analysis":
 # Anomaly Detection
 elif selected == "Anomaly Detection":
     st.title("🚨 Anomaly Detection")
-    if 'labeled_file' in st.session_state:
+
+    if 'processed_file' in st.session_state:
         try:
-            df_processed = pd.read_csv(st.session_state['labeled_file'], encoding='utf-8-sig')
-            if 'Incident Count' in df_processed.columns:
-                st.subheader("📈 Isolation Forest Anomaly Detection")
-                scaler = StandardScaler()
-                features = scaler.fit_transform(df_processed[['Incident Count']])
-                model = IsolationForest(contamination=0.05, random_state=42)
-                df_processed['Anomaly'] = model.fit_predict(features)
-                st.dataframe(df_processed[['Event User', 'Anomaly']])
+            # Load processed file from session state
+            processed_file = st.session_state['processed_file']
+            df_processed = pd.read_csv(processed_file, encoding='utf-8-sig')
 
             st.subheader("Step 1: Data Preparation for Anomaly Detection")
             df_processed['Incident Count'] = df_processed.groupby('Event User')['Event User'].transform('count')
