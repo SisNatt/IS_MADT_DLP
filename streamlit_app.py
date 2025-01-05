@@ -149,15 +149,18 @@ if selected == "Home - Raw Data":
 # Page 2: View Processed Data
 elif selected == "View Processed Data":
     st.title("📊 View Processed Data")
-    
+
     if 'labeled_file' in st.session_state:
         try:
-            # โหลดไฟล์ข้อมูลที่ถูก Label แล้ว
+            # Load the labeled data file
             df_processed = pd.read_csv(st.session_state['labeled_file'], encoding='utf-8-sig')
             st.write(f"Total records: {len(df_processed)}")
-            st.dataframe(df_processed)
 
-            # ดาวน์โหลดข้อมูลที่ประมวลผลแล้ว
+            # Display the data in an expandable section
+            with st.expander("View Processed Data Table"):
+                st.dataframe(df_processed)
+
+            # Add download button for the processed data
             st.subheader("📥 Download Processed Data")
             st.download_button(
                 label="Download CSV",
@@ -166,7 +169,7 @@ elif selected == "View Processed Data":
                 mime="text/csv"
             )
 
-            # เพิ่มตัวกรองสำหรับ Match_Label
+            # Add filter for Match_Label
             if 'Match_Label' in df_processed.columns:
                 st.subheader("Filter by Match_Label")
                 match_label_filter = st.radio(
@@ -175,7 +178,7 @@ elif selected == "View Processed Data":
                     index=0
                 )
 
-                # กรองข้อมูลตาม Match_Label
+                # Filter data based on Match_Label
                 if match_label_filter == 'All':
                     df_filtered = df_processed
                 elif match_label_filter == 'True':
@@ -183,9 +186,10 @@ elif selected == "View Processed Data":
                 elif match_label_filter == 'False':
                     df_filtered = df_processed[df_processed['Match_Label'] == "False"]
 
-                # แสดงผลข้อมูลที่กรองแล้ว
+                # Display the filtered data in an expandable section
                 st.write(f"Filtered records: {len(df_filtered)}")
-                st.dataframe(df_filtered)
+                with st.expander("View Filtered Data Table"):
+                    st.dataframe(df_filtered)
 
                 # Severity Count for Filtered Data
                 if 'Severity' in df_filtered.columns:
