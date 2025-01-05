@@ -166,7 +166,7 @@ elif selected == "View Processed Data":
                 mime="text/csv"
             )
 
-            # Filter data by Match_Label
+            # เพิ่มตัวกรองสำหรับ Match_Label
             if 'Match_Label' in df_processed.columns:
                 st.subheader("Filter by Match_Label")
                 match_label_filter = st.radio(
@@ -175,23 +175,17 @@ elif selected == "View Processed Data":
                     index=0
                 )
 
-                # Ensure Match_Label column is boolean
-                df_processed['Match_Label'] = df_processed['Match_Label'].apply(
-                    lambda x: True if str(x).strip().lower() == 'true' else False
-                )
-
-                # Apply filter
+                # กรองข้อมูลตาม Match_Label
                 if match_label_filter == 'All':
                     df_filtered = df_processed
                 elif match_label_filter == 'True':
-                    df_filtered = df_processed[df_processed['Match_Label'] == True]
+                    df_filtered = df_processed[df_processed['Match_Label'] == "True"]
                 elif match_label_filter == 'False':
-                    df_filtered = df_processed[df_processed['Match_Label'] == False]
+                    df_filtered = df_processed[df_processed['Match_Label'] == "False"]
 
-                # Display filtered data
+                # แสดงผลข้อมูลที่กรองแล้ว
                 st.write(f"Filtered records: {len(df_filtered)}")
-                with st.expander("View Filtered Data"):
-                    st.dataframe(df_filtered)
+                st.dataframe(df_filtered)
 
                 # Severity Count for Filtered Data
                 if 'Severity' in df_filtered.columns:
