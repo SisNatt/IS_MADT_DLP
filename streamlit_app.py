@@ -149,18 +149,18 @@ if selected == "Home - Raw Data":
 # Page 2: View Processed Data
 elif selected == "View Processed Data":
     st.title("📊 View Processed Data")
-
+    
     if 'labeled_file' in st.session_state:
         try:
-            # Load the labeled data file
+            # Load labeled data
             df_processed = pd.read_csv(st.session_state['labeled_file'], encoding='utf-8-sig')
             st.write(f"Total records: {len(df_processed)}")
-
-            # Display the data in an expandable section
-            with st.expander("View Processed Data Table"):
+            
+            # Collapsible section for raw processed data
+            with st.expander("View Full Processed Data"):
                 st.dataframe(df_processed)
 
-            # Add download button for the processed data
+            # Download button for processed data
             st.subheader("📥 Download Processed Data")
             st.download_button(
                 label="Download CSV",
@@ -169,7 +169,7 @@ elif selected == "View Processed Data":
                 mime="text/csv"
             )
 
-            # Add filter for Match_Label
+            # Filter for Match_Label
             if 'Match_Label' in df_processed.columns:
                 st.subheader("Filter by Match_Label")
                 match_label_filter = st.radio(
@@ -178,7 +178,7 @@ elif selected == "View Processed Data":
                     index=0
                 )
 
-                # Filter data based on Match_Label
+                # Apply Match_Label filter
                 if match_label_filter == 'All':
                     df_filtered = df_processed
                 elif match_label_filter == 'True':
@@ -186,9 +186,9 @@ elif selected == "View Processed Data":
                 elif match_label_filter == 'False':
                     df_filtered = df_processed[df_processed['Match_Label'] == "False"]
 
-                # Display the filtered data in an expandable section
+                # Display filtered data in collapsible view
                 st.write(f"Filtered records: {len(df_filtered)}")
-                with st.expander("View Filtered Data Table"):
+                with st.expander("View Filtered Data"):
                     st.dataframe(df_filtered)
 
                 # Severity Count for Filtered Data
