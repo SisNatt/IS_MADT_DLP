@@ -101,7 +101,7 @@ if selected == "Home - Raw Data":
             except Exception as e:
                 st.error(f"Error preprocessing raw data: {e}")
                 
-        st.subheader("📌 Step 2: Label Matching")
+       st.subheader("📌 Step 2: Label Matching")
         if st.button("Label Data"):
             try:
                 df_dictionary = pd.read_csv(DICTIONARY_FILE, encoding='utf-8-sig')
