@@ -13,8 +13,6 @@ import matplotlib.pyplot as plt
 from sklearn.ensemble import IsolationForest
 from collections import Counter
 from sklearn.preprocessing import LabelEncoder  # Add this line
-import re
-
 
 # File paths
 INCIDENT_FILE = "https://drive.google.com/uc?id=1NiDi3MOJi9nmThqmncOzpto1vpEcPbGd"
