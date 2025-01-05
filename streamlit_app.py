@@ -101,46 +101,50 @@ if selected == "Home - Raw Data":
             except Exception as e:
                 st.error(f"Error preprocessing raw data: {e}")
                 
-        # Process 1: Process Incidents (Existing Method)
-        st.subheader("Step 2: Labeling Log")
+        # Labeling Process
+        st.subheader("Step 2: Labeling Logs")
         if st.button("Label Process"):
             try:
-                # Load preprocessed data
-                if 'preprocessed_file' in st.session_state:
-                    df_raw = pd.read_csv(st.session_state['preprocessed_file'], encoding='utf-8-sig')
-
                 # Load dictionary
                 df_dictionary = pd.read_csv(DICTIONARY_FILE, encoding='utf-8-sig')
 
-                # Define matching words
-                matching_words = set(df_dictionary['Word'].str.lower().str.strip())
+                # Preprocess dictionary words
+                def preprocess_text(text):
+                    return re.sub(r'[^a-zA-Z0-9\s]', '', str(text)).lower().strip()
 
+                matching_words = set(df_dictionary['Word'].apply(preprocess_text))
+
+                # Debugging output
+                st.write("First 10 Matching Words:")
+                st.write(list(matching_words)[:10])
+
+                # Preprocess Evident_data
+                df_raw['Evident_data_clean'] = df_raw['Evident_data'].apply(preprocess_text)
+
+                # Check matches
                 def check_evidence_match(row):
-                    """Check if words in 'Evident_data' match the dictionary."""
-                    evident_data = str(row['Evident_data']).lower().strip()
+                    evident_data_words = row['Evident_data_clean'].split()
                     for word in matching_words:
-                        if word in evident_data:
+                        if word in evident_data_words:
                             return 'True'
                     return 'False'
 
-                # Validate 'Evident_data' column
                 if 'Evident_data' not in df_raw.columns:
                     st.error("Column 'Evident_data' not found in the dataset.")
-                    st.stop()
+                else:
+                    df_raw['Match_Label'] = df_raw.apply(check_evidence_match, axis=1)
 
-                # Apply the matching function
-                df_raw['Match_Label'] = df_raw.apply(check_evidence_match, axis=1)
+                    # Save labeled data
+                    today = datetime.now().strftime("%d%m%y")
+                    existing_files = [f for f in os.listdir(OUTPUT_DIR) if f.startswith(f"incident_log_with_match_{today}")]
+                    running_number = len(existing_files) + 1
+                    output_file = f"{OUTPUT_DIR}/incident_log_with_match_{today}_{running_number:03d}.csv"
+                    df_raw.to_csv(output_file, index=False, encoding='utf-8-sig')
 
-                # Save processed file
-                today = datetime.now().strftime("%d%m%y")
-                existing_files = [f for f in os.listdir(OUTPUT_DIR) if f.startswith(f"incident_log_with_match_{today}")]
-                running_number = len(existing_files) + 1
-                output_file = f"{OUTPUT_DIR}/incident_log_with_match_{today}_{running_number:03d}.csv"
-                df_raw.to_csv(output_file, index=False, encoding='utf-8-sig')
-
-                # Save processed file to session state
-                st.session_state['processed_file'] = output_file
-                st.success(f"Processed file saved as '{output_file}'")
+                    st.success(f"Processed file saved as '{output_file}'")
+                    st.write("Sample Processed Data:")
+                    st.dataframe(df_raw[['Evident_data', 'Match_Label']].head())
+                    
             except Exception as e:
                 st.error(f"Error processing incidents: {e}")
 
