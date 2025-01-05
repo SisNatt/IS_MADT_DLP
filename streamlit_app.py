@@ -108,36 +108,43 @@ if selected == "Home - Raw Data":
                 # Load dictionary file
                 df_dictionary = pd.read_csv(DICTIONARY_FILE, encoding='utf-8-sig')
 
-                # Ensure the dictionary file has a 'Word' column
+                # ตรวจสอบว่าคอลัมน์ 'Word' มีใน dictionary file หรือไม่
                 if 'Word' not in df_dictionary.columns:
                     st.error("The dictionary file must contain a 'Word' column.")
                     st.stop()
 
-                # Preprocess dictionary words
+                # แปลงคำใน dictionary เป็นตัวพิมพ์เล็ก และตัดช่องว่าง
                 matching_words = set(df_dictionary['Word'].str.lower().str.strip())
 
-                # Check if 'Evident_data' exists in the raw data
+                # ตรวจสอบว่าคอลัมน์ 'Evident_data' มีใน raw data หรือไม่
                 if 'Evident_data' not in df_raw.columns:
                     st.error("Column 'Evident_data' not found in the raw data.")
                     st.stop()
 
-                # Apply the labeling function
-                df_raw['Match_Label'] = df_raw.apply(check_evidence_match, axis=1, matching_words=matching_words)
+                # ฟังก์ชันสำหรับตรวจสอบว่ามีคำตรงกันใน Evident_data หรือไม่
+                def check_evidence_match(row):
+                    evidence = str(row['Evident_data']).lower().strip()
+                    for word in matching_words:
+                        if word in evidence:
+                            return "True"
+                    return "False"
 
-                # Save the labeled data
+                # ประยุกต์ฟังก์ชันเพื่อสร้าง Match_Label
+                df_raw['Match_Label'] = df_raw.apply(check_evidence_match, axis=1)
+
+                # บันทึกไฟล์ที่มีการใส่ Label แล้ว
                 labeled_file = os.path.join(OUTPUT_DIR, "labeled_data.csv")
                 df_raw.to_csv(labeled_file, index=False, encoding='utf-8-sig')
                 st.session_state['labeled_file'] = labeled_file
 
                 st.success(f"Labeled data saved at: {labeled_file}")
 
-                # Display a preview of labeled data
+                # แสดงตัวอย่างข้อมูลที่มีการใส่ Match_Label
                 st.write("Preview of Labeled Data:")
                 st.dataframe(df_raw[['Evident_data', 'Match_Label']].head())
 
             except Exception as e:
                 st.error(f"Error during labeling: {e}")
-
 
 # Page 2: View Processed Data
 elif selected == "View Processed Data":
@@ -145,12 +152,12 @@ elif selected == "View Processed Data":
     
     if 'labeled_file' in st.session_state:
         try:
-            # Load processed data
+            # โหลดไฟล์ข้อมูลที่ถูก Label แล้ว
             df_processed = pd.read_csv(st.session_state['labeled_file'], encoding='utf-8-sig')
             st.write(f"Total records: {len(df_processed)}")
             st.dataframe(df_processed)
 
-            # Download button for processed data
+            # ดาวน์โหลดข้อมูลที่ประมวลผลแล้ว
             st.subheader("📥 Download Processed Data")
             st.download_button(
                 label="Download CSV",
