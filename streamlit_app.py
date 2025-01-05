@@ -142,12 +142,15 @@ if selected == "Home - Raw Data":
 # Page 2: View Processed Data
 elif selected == "View Processed Data":
     st.title("📊 View Processed Data")
+    
     if 'labeled_file' in st.session_state:
         try:
+            # Load processed data
             df_processed = pd.read_csv(st.session_state['labeled_file'], encoding='utf-8-sig')
             st.write(f"Total records: {len(df_processed)}")
             st.dataframe(df_processed)
 
+            # Download button for processed data
             st.subheader("📥 Download Processed Data")
             st.download_button(
                 label="Download CSV",
@@ -156,7 +159,7 @@ elif selected == "View Processed Data":
                 mime="text/csv"
             )
 
-            # Check if Match_Label exists
+            # Filter data by Match_Label
             if 'Match_Label' in df_processed.columns:
                 st.subheader("Filter by Match_Label")
                 match_label_filter = st.radio(
@@ -165,7 +168,7 @@ elif selected == "View Processed Data":
                     index=0
                 )
 
-                # Apply the matching function to ensure Match_Label is valid
+                # Ensure Match_Label column is boolean
                 df_processed['Match_Label'] = df_processed['Match_Label'].apply(
                     lambda x: True if str(x).strip().lower() == 'true' else False
                 )
@@ -214,6 +217,7 @@ elif selected == "View Processed Data":
                     st.error("Column 'Incident Type' not found in the processed dataset.")
             else:
                 st.error("Column 'Match_Label' does not exist in the dataset.")
+
         except Exception as e:
             st.error(f"Error loading processed data: {e}")
     else:
