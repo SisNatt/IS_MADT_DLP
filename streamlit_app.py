@@ -562,9 +562,9 @@ elif selected == "Anomaly Detection":
 
             # Count of records for each group
             anomaly_counts = anomaly_features['Anomaly'].value_counts()
-            st.write("### Count of Anomalies and Normal Records")
-            st.write(f"- **Normal**: {anomaly_counts.get('Normal', 0)} records")
-            st.write(f"- **Anomalies**: {anomaly_counts.get('Anomaly', 0)} records")
+            st.write("### Count of Anomalies and Normal Users")
+            st.write(f"- **Normal**: {anomaly_counts.get('Normal', 0)} Users")
+            st.write(f"- **Anomalies**: {anomaly_counts.get('Anomaly', 0)} Users")
 
             # Explain findings and recommendations based on dynamic data
             st.write("### Findings and Recommendations")
